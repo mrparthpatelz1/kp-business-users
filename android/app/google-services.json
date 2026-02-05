@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1030875820932",
+    "project_id": "kp-business-78d27",
+    "storage_bucket": "kp-business-78d27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1030875820932:android:01ebad400bc5a1e55563d1",
+        "android_client_info": {
+          "package_name": "com.kpbusiness.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG7zijfpQ1CE0-kbGmTKt5B0wYdKlnFgM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

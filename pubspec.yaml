@@ -1,0 +1,76 @@
+name: kp_business_users
+description: "KP Business Community Platform - Users App"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  
+  # State Management
+  get: ^4.6.6
+  
+  # Local Storage
+  get_storage: ^2.1.1
+  
+  # API Calls
+  dio: ^5.4.0
+  
+  # Responsive UI
+  responsive_sizer: ^3.3.1
+  
+  # Fonts
+  google_fonts: ^7.0.0
+  
+  # Image Picker
+  image_picker: ^1.2.1
+  
+  # Date Formatting
+  intl: ^0.20.2
+  
+  # Form Builder
+  flutter_form_builder: ^10.2.0
+  form_builder_validators: ^11.2.0
+  dropdown_search: ^6.0.2
+  firebase_core: ^4.4.0
+  firebase_messaging: ^16.1.1
+  
+  # Local Notifications (for heads-up display)
+  flutter_local_notifications: ^19.5.0
+  
+  # URL Launch (for phone calls)
+  url_launcher: ^6.3.1
+  
+  # Socket.io for Chat
+  socket_io_client: ^2.0.3
+
+  # Sharing & Deep Links
+  share_plus: ^10.1.4
+  app_links: ^6.3.1
+  
+  # Connectivity
+  connectivity_plus: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/

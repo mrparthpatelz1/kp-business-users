@@ -1,0 +1,919 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:dropdown_search/dropdown_search.dart';
+import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
+import '../../data/services/auth_service.dart';
+import 'edit_profile_controller.dart';
+
+class EditProfileView extends GetView<EditProfileController> {
+  const EditProfileView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Ensure controller is initialized
+    Get.put(EditProfileController());
+
+    final formKey = GlobalKey<FormState>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Edit Profile'),
+        actions: [
+          Obx(
+            () => controller.isSaving.value
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.check),
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        final success = await controller.saveProfile();
+                        if (success) {
+                          Get.back();
+                          Get.snackbar(
+                            'Success',
+                            'Profile updated successfully',
+                            backgroundColor: AppTheme.successColor,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                        } else {
+                          Get.snackbar(
+                            'Error',
+                            'Failed to update profile',
+                            backgroundColor: AppTheme.errorColor,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                        }
+                      }
+                    },
+                  ),
+          ),
+        ],
+      ),
+      body: Form(
+        key: formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(4.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Profile Photo
+              Center(child: _buildProfilePhoto()),
+              SizedBox(height: 3.h),
+
+              // Personal Info Section Header
+              _buildSectionHeader(context, 'Personal Information'),
+              SizedBox(height: 2.h),
+
+              // Full Name & Saakh Row
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.fullNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Full Name *',
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                  ),
+                  SizedBox(width: 3.w),
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller.surnameController,
+                      decoration: const InputDecoration(labelText: 'Saakh *'),
+                      textCapitalization: TextCapitalization.words,
+                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 2.h),
+
+              // Email (Read-only)
+              TextFormField(
+                controller: controller.emailController,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Email *',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  suffixIcon: Icon(Icons.lock, size: 16),
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // Phone (Read-only)
+              TextFormField(
+                controller: controller.phoneController,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Mobile Number *',
+                  prefixIcon: Icon(Icons.phone),
+                  suffixIcon: Icon(Icons.lock, size: 16),
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // Gender
+              Text('Gender *', style: Theme.of(context).textTheme.titleMedium),
+              SizedBox(height: 1.h),
+              Obx(
+                () => Row(
+                  children: controller.genderOptions.map((g) {
+                    final isSelected = controller.gender.value == g;
+                    return Padding(
+                      padding: EdgeInsets.only(right: 2.w),
+                      child: ChoiceChip(
+                        label: Text(g.capitalizeFirst!),
+                        selected: isSelected,
+                        onSelected: (_) => controller.gender.value = g,
+                        selectedColor: AppTheme.primaryColor,
+                        labelStyle: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.textPrimary,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // Date of Birth
+              Obx(
+                () => InkWell(
+                  onTap: () => controller.selectDateOfBirth(context),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Date of Birth *',
+                      prefixIcon: Icon(Icons.calendar_today_outlined),
+                    ),
+                    child: Text(
+                      controller.dateOfBirth.value != null
+                          ? DateFormat(
+                              'dd/MM/yyyy',
+                            ).format(controller.dateOfBirth.value!)
+                          : 'Select date',
+                      style: TextStyle(
+                        color: controller.dateOfBirth.value != null
+                            ? AppTheme.textPrimary
+                            : AppTheme.textLight,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // Blood Group (Optional)
+              Text(
+                'Blood Group (Optional)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              SizedBox(height: 1.h),
+              Obx(
+                () => Wrap(
+                  spacing: 2.w,
+                  runSpacing: 1.h,
+                  children: controller.bloodGroupOptions.map((bg) {
+                    final isSelected = controller.bloodGroup.value == bg;
+                    return ChoiceChip(
+                      label: Text(bg),
+                      selected: isSelected,
+                      onSelected: (_) =>
+                          controller.bloodGroup.value = isSelected ? '' : bg,
+                      selectedColor: AppTheme.primaryColor,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 3.h),
+
+              // Address Section Header
+              _buildSectionHeader(context, 'Address Information'),
+              SizedBox(height: 2.h),
+
+              // Native Village (Read-only)
+              TextFormField(
+                controller: controller.nativeVillageNameController,
+                enabled: false,
+                decoration: const InputDecoration(
+                  labelText: 'Native Village *',
+                  prefixIcon: Icon(Icons.location_city_outlined),
+                  suffixIcon: Icon(Icons.lock, size: 16),
+                ),
+              ),
+              SizedBox(height: 3.h),
+
+              // Divider
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 3.w),
+                    child: Text(
+                      'Current Living Address',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              SizedBox(height: 2.h),
+
+              // Address line
+              TextFormField(
+                controller: controller.addressController,
+                decoration: const InputDecoration(
+                  labelText: 'Address Line *',
+                  prefixIcon: Icon(Icons.home_outlined),
+                  hintText: 'House no, Street, Area',
+                ),
+                maxLines: 2,
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
+              SizedBox(height: 2.h),
+
+              // Country - Searchable
+              Obx(
+                () => DropdownSearch<Map<String, dynamic>>(
+                  items: (filter, _) => controller.countries.toList(),
+                  selectedItem: controller.countries.firstWhereOrNull(
+                    (c) => c['code'] == controller.selectedCountryCode.value,
+                  ),
+                  itemAsString: (item) => item['name'] ?? '',
+                  compareFn: (a, b) => a['code'] == b['code'],
+                  decoratorProps: const DropDownDecoratorProps(
+                    decoration: InputDecoration(
+                      labelText: 'Country *',
+                      prefixIcon: Icon(Icons.flag_outlined),
+                    ),
+                  ),
+                  popupProps: PopupProps.menu(
+                    showSearchBox: true,
+                    searchFieldProps: const TextFieldProps(
+                      decoration: InputDecoration(
+                        hintText: 'Search country...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                  ),
+                  onChanged: (item) {
+                    if (item != null) controller.loadStates(item['code']);
+                  },
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // State - Searchable
+              Obx(
+                () => DropdownSearch<Map<String, dynamic>>(
+                  items: (filter, _) => controller.states.toList(),
+                  selectedItem: controller.states.firstWhereOrNull(
+                    (s) => s['code'] == controller.selectedStateCode.value,
+                  ),
+                  itemAsString: (item) => item['name'] ?? '',
+                  compareFn: (a, b) => a['code'] == b['code'],
+                  decoratorProps: const DropDownDecoratorProps(
+                    decoration: InputDecoration(
+                      labelText: 'State *',
+                      prefixIcon: Icon(Icons.map_outlined),
+                    ),
+                  ),
+                  popupProps: PopupProps.menu(
+                    showSearchBox: true,
+                    searchFieldProps: const TextFieldProps(
+                      decoration: InputDecoration(
+                        hintText: 'Search state...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                  ),
+                  onChanged: (item) {
+                    if (item != null) controller.loadCities(item['code']);
+                  },
+                  validator: (v) => v == null ? 'Required' : null,
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // City - Searchable
+              Obx(
+                () => DropdownSearch<Map<String, dynamic>>(
+                  items: (filter, _) => controller.cities.toList(),
+                  selectedItem: controller.cities.firstWhereOrNull(
+                    (c) => c['name'] == controller.selectedCityName.value,
+                  ),
+                  itemAsString: (item) => item['name'] ?? '',
+                  compareFn: (a, b) => a['name'] == b['name'],
+                  decoratorProps: const DropDownDecoratorProps(
+                    decoration: InputDecoration(
+                      labelText: 'City *',
+                      prefixIcon: Icon(Icons.location_city_outlined),
+                    ),
+                  ),
+                  popupProps: PopupProps.menu(
+                    showSearchBox: true,
+                    searchFieldProps: const TextFieldProps(
+                      decoration: InputDecoration(
+                        hintText: 'Search city...',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                    ),
+                  ),
+                  onChanged: (item) {
+                    controller.selectedCityName.value = item?['name'] ?? '';
+                  },
+                  validator: (v) => v == null ? 'Required' : null,
+                ),
+              ),
+              SizedBox(height: 2.h),
+
+              // Zipcode
+              TextFormField(
+                controller: controller.zipcodeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Zipcode *',
+                  prefixIcon: Icon(Icons.pin_drop_outlined),
+                ),
+                validator: (v) {
+                  if (v!.isEmpty) return 'Required';
+                  if (!RegExp(r'^[0-9]{6}$').hasMatch(v)) {
+                    return 'Enter 6 digit zipcode';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 3.h),
+
+              // Education Section
+              _buildSectionHeader(context, 'Education'),
+              SizedBox(height: 2.h),
+              Obx(
+                () => Column(
+                  children: [
+                    ...controller.educationList.asMap().entries.map(
+                      (entry) => _buildEducationItem(entry.key, entry.value),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => controller.addEducation(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Education'),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 3.h),
+
+              // Professional Info (Dynamic)
+              Obx(() {
+                if (controller.userType.value == 'job') {
+                  return _buildJobSection(context);
+                } else if (controller.userType.value == 'business') {
+                  return _buildBusinessSection(context);
+                }
+                return const SizedBox.shrink();
+              }),
+
+              SizedBox(height: 5.h),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePhoto() {
+    return Column(
+      children: [
+        Obx(() {
+          final user = Get.find<AuthService>().currentUser.value;
+          return CircleAvatar(
+            radius: 50,
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+            backgroundImage: user?['profile_photo'] != null
+                ? NetworkImage(user!['profile_photo'])
+                : null,
+            child: user?['profile_photo'] == null
+                ? const Icon(
+                    Icons.person,
+                    size: 50,
+                    color: AppTheme.primaryColor,
+                  )
+                : null,
+          );
+        }),
+        SizedBox(height: 1.h),
+        TextButton.icon(
+          onPressed: () {
+            Get.snackbar('Notice', 'Photo upload coming soon');
+          },
+          icon: const Icon(Icons.camera_alt),
+          label: const Text('Change Photo'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        const Divider(),
+      ],
+    );
+  }
+
+  Widget _buildEducationItem(int index, Map<String, dynamic> item) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 2.h),
+      child: Padding(
+        padding: EdgeInsets.all(4.w),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Education #${index + 1}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => controller.removeEducation(index),
+                ),
+              ],
+            ),
+            TextFormField(
+              initialValue: item['qualification'],
+              decoration: const InputDecoration(
+                labelText: 'Degree/Qualification',
+              ),
+              onChanged: (v) =>
+                  controller.updateEducation(index, 'qualification', v),
+            ),
+            SizedBox(height: 1.h),
+            TextFormField(
+              initialValue: item['institution'],
+              decoration: const InputDecoration(
+                labelText: 'Institution/School',
+              ),
+              onChanged: (v) =>
+                  controller.updateEducation(index, 'institution', v),
+            ),
+            SizedBox(height: 1.h),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    initialValue: item['passing_year']?.toString(),
+                    decoration: const InputDecoration(
+                      labelText: 'Passing Year',
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) =>
+                        controller.updateEducation(index, 'passing_year', v),
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                Expanded(
+                  child: TextFormField(
+                    initialValue: item['grade']?.toString(),
+                    decoration: const InputDecoration(labelText: 'Grade/CGPA'),
+                    onChanged: (v) =>
+                        controller.updateEducation(index, 'grade', v),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildJobSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'Job Details'),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.jobCompanyController,
+          decoration: const InputDecoration(
+            labelText: 'Company Name',
+            prefixIcon: Icon(Icons.business),
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Job Type - Searchable Dropdown
+        Obx(
+          () => DropdownSearch<Map<String, dynamic>>(
+            items: (filter, _) => controller.jobTypes.toList(),
+            selectedItem: controller.jobTypes.firstWhereOrNull(
+              (t) => t['id'] == controller.selectedJobTypeId.value,
+            ),
+            itemAsString: (item) => item['type_name'] ?? '',
+            compareFn: (a, b) => a['id'] == b['id'],
+            decoratorProps: const DropDownDecoratorProps(
+              decoration: InputDecoration(
+                labelText: 'Job Type',
+                prefixIcon: Icon(Icons.work_outline),
+              ),
+            ),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: const TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: 'Search type...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            onChanged: (item) {
+              controller.selectedJobTypeId.value = item?['id'] ?? 0;
+            },
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Job Category - Searchable Dropdown
+        Obx(
+          () => DropdownSearch<Map<String, dynamic>>(
+            items: (filter, _) => controller.jobCategories.toList(),
+            selectedItem: controller.jobCategories.firstWhereOrNull(
+              (c) => c['id'] == controller.selectedJobCategoryId.value,
+            ),
+            itemAsString: (item) => item['category_name'] ?? '',
+            compareFn: (a, b) => a['id'] == b['id'],
+            decoratorProps: const DropDownDecoratorProps(
+              decoration: InputDecoration(
+                labelText: 'Job Category',
+                prefixIcon: Icon(Icons.category),
+              ),
+            ),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: const TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: 'Search category...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            onChanged: (item) {
+              if (item != null) controller.loadJobSubcategories(item['id']);
+            },
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Job Subcategories - Multi-Select Dropdown
+        Obx(
+          () => controller.jobSubcategories.isNotEmpty
+              ? Column(
+                  children: [
+                    DropdownSearch<Map<String, dynamic>>.multiSelection(
+                      items: (filter, _) =>
+                          controller.jobSubcategories.toList(),
+                      selectedItems: controller.jobSubcategories
+                          .where(
+                            (sub) => controller.selectedJobSubcategoryIds
+                                .contains(sub['id']),
+                          )
+                          .toList(),
+                      itemAsString: (item) => item['subcategory_name'] ?? '',
+                      compareFn: (a, b) => a['id'] == b['id'],
+                      decoratorProps: const DropDownDecoratorProps(
+                        decoration: InputDecoration(
+                          labelText: 'Job Subcategories',
+                          prefixIcon: Icon(Icons.category_outlined),
+                          hintText: 'Select multiple subcategories',
+                        ),
+                      ),
+                      popupProps: PopupPropsMultiSelection.menu(
+                        showSearchBox: true,
+                        searchFieldProps: const TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: 'Search subcategories...',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                        ),
+                      ),
+                      onChanged: (items) {
+                        controller.selectedJobSubcategoryIds.value = items
+                            .map((item) => item['id'] as int)
+                            .toList();
+                      },
+                    ),
+                    SizedBox(height: 2.h),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
+
+        TextFormField(
+          controller: controller.jobDesignationController,
+          decoration: const InputDecoration(
+            labelText: 'Designation',
+            prefixIcon: Icon(Icons.badge),
+          ),
+        ),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.jobDepartmentController,
+          decoration: const InputDecoration(
+            labelText: 'Department',
+            prefixIcon: Icon(Icons.work),
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller.jobExperienceController,
+                decoration: const InputDecoration(
+                  labelText: 'Exp (Years)',
+                  prefixIcon: Icon(Icons.timeline),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Expanded(
+              child: Obx(
+                () => InkWell(
+                  onTap: () => controller.selectJobJoinDate(context),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Join Date',
+                      prefixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(
+                      controller.jobJoinDate.value != null
+                          ? DateFormat(
+                              'dd/MM/yyyy',
+                            ).format(controller.jobJoinDate.value!)
+                          : 'Select date',
+                      style: TextStyle(
+                        color: controller.jobJoinDate.value != null
+                            ? AppTheme.textPrimary
+                            : AppTheme.textLight,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(context, 'Business Details'),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.businessNameController,
+          decoration: const InputDecoration(
+            labelText: 'Business Name',
+            prefixIcon: Icon(Icons.store),
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Business Type - Searchable Dropdown
+        Obx(
+          () => DropdownSearch<Map<String, dynamic>>(
+            items: (filter, _) => controller.businessTypes.toList(),
+            selectedItem: controller.businessTypes.firstWhereOrNull(
+              (t) => t['id'] == controller.selectedBusinessTypeId.value,
+            ),
+            itemAsString: (item) => item['type_name'] ?? '',
+            compareFn: (a, b) => a['id'] == b['id'],
+            decoratorProps: const DropDownDecoratorProps(
+              decoration: InputDecoration(
+                labelText: 'Business Type',
+                prefixIcon: Icon(Icons.business_center),
+              ),
+            ),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: const TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: 'Search type...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            onChanged: (item) {
+              controller.selectedBusinessTypeId.value = item?['id'] ?? 0;
+            },
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Business Category - Searchable Dropdown
+        Obx(
+          () => DropdownSearch<Map<String, dynamic>>(
+            items: (filter, _) => controller.businessCategories.toList(),
+            selectedItem: controller.businessCategories.firstWhereOrNull(
+              (c) => c['id'] == controller.selectedBusinessCategoryId.value,
+            ),
+            itemAsString: (item) => item['category_name'] ?? '',
+            compareFn: (a, b) => a['id'] == b['id'],
+            decoratorProps: const DropDownDecoratorProps(
+              decoration: InputDecoration(
+                labelText: 'Business Category',
+                prefixIcon: Icon(Icons.category),
+              ),
+            ),
+            popupProps: PopupProps.menu(
+              showSearchBox: true,
+              searchFieldProps: const TextFieldProps(
+                decoration: InputDecoration(
+                  hintText: 'Search category...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            onChanged: (item) {
+              if (item != null) {
+                controller.loadBusinessSubcategories(item['id']);
+              }
+            },
+          ),
+        ),
+        SizedBox(height: 2.h),
+
+        // Business Subcategories - Multi-Select Dropdown
+        Obx(
+          () => controller.businessSubcategories.isNotEmpty
+              ? Column(
+                  children: [
+                    DropdownSearch<Map<String, dynamic>>.multiSelection(
+                      items: (filter, _) =>
+                          controller.businessSubcategories.toList(),
+                      selectedItems: controller.businessSubcategories
+                          .where(
+                            (sub) => controller.selectedBusinessSubcategoryIds
+                                .contains(sub['id']),
+                          )
+                          .toList(),
+                      itemAsString: (item) => item['subcategory_name'] ?? '',
+                      compareFn: (a, b) => a['id'] == b['id'],
+                      decoratorProps: const DropDownDecoratorProps(
+                        decoration: InputDecoration(
+                          labelText: 'Business Subcategories',
+                          prefixIcon: Icon(Icons.category_outlined),
+                          hintText: 'Select multiple subcategories',
+                        ),
+                      ),
+                      popupProps: PopupPropsMultiSelection.menu(
+                        showSearchBox: true,
+                        searchFieldProps: const TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: 'Search subcategories...',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                        ),
+                      ),
+                      onChanged: (items) {
+                        controller.selectedBusinessSubcategoryIds.value = items
+                            .map((item) => item['id'] as int)
+                            .toList();
+                      },
+                    ),
+                    SizedBox(height: 2.h),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.businessDescriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Description',
+            prefixIcon: Icon(Icons.description),
+          ),
+          maxLines: 3,
+        ),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.businessAddressController,
+          decoration: const InputDecoration(
+            labelText: 'Business Address',
+            prefixIcon: Icon(Icons.place),
+          ),
+          maxLines: 2,
+        ),
+        SizedBox(height: 2.h),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessPhoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 2.h),
+        TextFormField(
+          controller: controller.businessWebsiteController,
+          decoration: const InputDecoration(
+            labelText: 'Website',
+            prefixIcon: Icon(Icons.language),
+          ),
+        ),
+        SizedBox(height: 2.h),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessGstController,
+                decoration: const InputDecoration(
+                  labelText: 'GST Number',
+                  prefixIcon: Icon(Icons.receipt),
+                ),
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessEstablishmentYearController,
+                decoration: const InputDecoration(
+                  labelText: 'Est. Year',
+                  prefixIcon: Icon(Icons.calendar_today),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 2.h),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessEmployeesController,
+                decoration: const InputDecoration(
+                  labelText: 'Employees',
+                  prefixIcon: Icon(Icons.people),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Expanded(
+              child: TextFormField(
+                controller: controller.businessTurnoverController,
+                decoration: const InputDecoration(
+                  labelText: 'Turnover',
+                  prefixIcon: Icon(Icons.monetization_on),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
