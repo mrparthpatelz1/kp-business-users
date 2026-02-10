@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -66,7 +67,7 @@ class NotificationService extends GetxService {
   Future<void> _initializeLocalNotifications() async {
     // Android initialization - use app icon
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
 
     // iOS initialization with foreground presentation options
     const DarwinInitializationSettings iosSettings =
@@ -87,7 +88,7 @@ class NotificationService extends GetxService {
     );
 
     // Create notification channel for Android 8.0+
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       await _localNotifications
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
@@ -100,12 +101,32 @@ class NotificationService extends GetxService {
     debugPrint('Notification tapped: ${response.payload}');
     // Handle notification tap - navigate based on payload
     final payload = response.payload;
+    // For local notifications, we might not have the full data map easily available
+    // unless we serialized it into the payload string or used a separate field.
+    // If payload is just 'chat_message', we can't nav without ID.
+    // However, _showHeadsUpNotification currently takes only payload string.
+    // Real fix: _showHeadsUpNotification should serialize data into payload
+    // OR we just navigate to chat list if data missing.
     if (payload != null) {
+      // Check if payload is JSON-like or just type
+      // For now, simple handling:
       _handleNotificationNavigation(payload);
     }
   }
 
-  void _handleNotificationNavigation(String type) {
+  void _handleMessageOpenedApp(RemoteMessage message) {
+    debugPrint('App opened from notification: ${message.data}');
+    // message.data contains the key-values sent from server
+    final type = message.data['type'];
+    if (type != null) {
+      _handleNotificationNavigation(type, data: message.data);
+    }
+  }
+
+  void _handleNotificationNavigation(
+    String type, {
+    Map<String, dynamic>? data,
+  }) {
     switch (type) {
       case 'user_approved':
         Get.offAllNamed('/home');
@@ -115,6 +136,22 @@ class NotificationService extends GetxService {
         break;
       case 'announcement':
         Get.toNamed('/announcements');
+        break;
+      case 'chat_message':
+        if (data != null) {
+          final conversationId = data['conversationId'];
+          final senderId = data['senderId'];
+          if (conversationId != null) {
+            Get.toNamed(
+              '/chat-detail',
+              arguments: {
+                'conversationId': conversationId,
+                'receiverId': int.tryParse(senderId.toString()) ?? 0,
+                'receiverName': 'Chat', // Placeholder, will fetch in view
+              },
+            );
+          }
+        }
         break;
       default:
         break;
@@ -234,25 +271,26 @@ class NotificationService extends GetxService {
     required String body,
     String? payload,
   }) async {
-    // Android notification details with HIGH priority for heads-up
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'kp_business_notifications', // Same as channel ID
-          'KP Business Notifications',
-          channelDescription: 'Notifications for KP Business app',
-          importance: Importance.max,
-          priority: Priority.high,
-          showWhen: true,
-          enableVibration: true,
-          playSound: true,
-          largeIcon: DrawableResourceAndroidBitmap(
-            '@mipmap/ic_launcher',
-          ), // App logo
-          // Heads-up notification settings
-          fullScreenIntent: false,
-          category: AndroidNotificationCategory.message,
-          visibility: NotificationVisibility.public,
-        );
+    // Android notification details
+    const AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
+      'kp_business_notifications', // Same as channel ID
+      'KP Business Notifications',
+      channelDescription: 'Notifications for KP Business app',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      // usage: NotificationIcon (small) must be a drawable resource.
+      // We use ic_launcher (App Icon) or a specific notification icon if available.
+      icon: '@mipmap/launcher_icon',
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+      // Heads-up notification settings
+      fullScreenIntent: false,
+      category: AndroidNotificationCategory.message,
+      visibility: NotificationVisibility.public,
+    );
 
     // iOS notification details
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
@@ -274,13 +312,5 @@ class NotificationService extends GetxService {
       details,
       payload: payload,
     );
-  }
-
-  void _handleMessageOpenedApp(RemoteMessage message) {
-    debugPrint('App opened from notification: ${message.data}');
-    final type = message.data['type'];
-    if (type != null) {
-      _handleNotificationNavigation(type);
-    }
   }
 }

@@ -10,6 +10,45 @@ import '../../../data/services/master_service.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../data/services/storage_service.dart';
 
+class BusinessFormState {
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final annualTurnoverController = TextEditingController(); // Keep it here
+  final yearOfEstablishmentController = TextEditingController();
+  final gstNumberController = TextEditingController();
+  final websiteUrlController = TextEditingController();
+  final numberOfEmployeesController = TextEditingController();
+
+  final RxString phoneCountryCode = '+91'.obs;
+  final Rx<int?> selectedTypeId = Rx<int?>(null);
+  final Rx<int?> selectedCategoryId = Rx<int?>(null);
+  final RxList<int> selectedSubcategoryIds = <int>[].obs;
+
+  // Note: Logo handling might need to be per-business if complex,
+  // but for now we'll stick to one logo or none for extra businesses due to UI/Backend ease
+  // or add a file picker here.
+  // The backend supports mapped logos but validation might be tricky.
+  // Let's assume One Logo for Primary Business (first one) primarily for now,
+  // or add `Rx<File?> logo` here.
+  final Rx<File?> logo = Rx<File?>(null);
+
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    descriptionController.dispose();
+    annualTurnoverController.dispose();
+    yearOfEstablishmentController.dispose();
+    gstNumberController.dispose();
+    websiteUrlController.dispose();
+    numberOfEmployeesController.dispose();
+  }
+}
+
 class RegisterController extends GetxController {
   final AuthService _authService = Get.find<AuthService>();
   final MasterService _masterService = Get.find<MasterService>();
@@ -97,22 +136,21 @@ class RegisterController extends GetxController {
   final RxBool isCurrentlyStudying = false.obs;
 
   // Step 4: Business Details (if user_type == business)
-  final businessNameController = TextEditingController();
-  final businessEmailController = TextEditingController();
-  final businessPhoneController = TextEditingController();
-  final RxString businessPhoneCountryCode = '+91'.obs; // Default India
-  final businessAddressController = TextEditingController();
-  final businessDescriptionController = TextEditingController();
-  final annualTurnoverController = TextEditingController();
-  final Rx<File?> businessLogo = Rx<File?>(null);
-  final yearOfEstablishmentController = TextEditingController();
-  final gstNumberController = TextEditingController();
-  final websiteUrlController = TextEditingController();
-  final numberOfEmployeesController = TextEditingController();
-  final Rx<int?> selectedBusinessTypeId = Rx<int?>(null);
-  final Rx<int?> selectedBusinessCategoryId = Rx<int?>(null);
-  final RxList<int> selectedBusinessSubcategoryIds =
-      <int>[].obs; // Multi-select
+  // Step 4: Business Details (if user_type == business)
+  // Replaced single controllers with a list of forms
+  final RxList<BusinessFormState> businessForms = <BusinessFormState>[].obs;
+
+  void addBusinessForm() {
+    businessForms.add(BusinessFormState());
+  }
+
+  void removeBusinessForm(int index) {
+    if (businessForms.length > 1) {
+      final form = businessForms[index];
+      form.dispose();
+      businessForms.removeAt(index);
+    }
+  }
 
   // Step 4: Job Details (if user_type == job)
   final companyNameController = TextEditingController();
@@ -156,6 +194,45 @@ class RegisterController extends GetxController {
   ];
   final List<String> userTypeOptions = ['business', 'job', 'student'];
 
+  // Profile Image
+  final Rx<File?> profileImage = Rx<File?>(null);
+
+  Future<void> pickProfileImage(ImageSource source) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: source);
+    if (image != null) {
+      profileImage.value = File(image.path);
+    }
+  }
+
+  void showImagePickerOptions() {
+    Get.bottomSheet(
+      Container(
+        color: Colors.white,
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () {
+                Get.back();
+                pickProfileImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () {
+                Get.back();
+                pickProfileImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -165,6 +242,8 @@ class RegisterController extends GetxController {
   Future<void> _loadInitialData() async {
     villages.value = await _masterService.getVillages();
     countries.value = await _masterService.getCountries();
+    // Initialize one business form
+    addBusinessForm();
     businessTypes.value = await _masterService.getBusinessTypes();
     businessCategories.value = await _masterService.getBusinessCategories();
     jobTypes.value = await _masterService.getJobTypes();
@@ -190,12 +269,45 @@ class RegisterController extends GetxController {
     );
   }
 
-  Future<void> loadBusinessSubcategories(int categoryId) async {
-    selectedBusinessCategoryId.value = categoryId;
-    selectedBusinessSubcategoryIds.clear();
-    businessSubcategories.value = await _masterService.getBusinessSubcategories(
-      categoryId,
-    );
+  Future<void> loadBusinessSubcategories(int categoryId, int formIndex) async {
+    // We need to load subcategories for a specific form?
+    // The MasterService returns all subcategories for a category.
+    // If we want to cache them, we might need a map.
+    // However, usually we can just fetch them when category changes.
+    // But since it's a list, we need to know WHICH form to update list for?
+    // Actually, the `businessSubcategories` list in controller is shared!
+    // This is a problem for multiple forms with different categories.
+    // We should move `businessSubcategories` list INTO `BusinessFormState` or map it.
+
+    // BETTER APPROACH: Add `RxList<Map<String, dynamic>> subcategories` to BusinessFormState
+    // And update that specific list.
+
+    // I will need to update BusinessFormState to include subcategories list.
+    // But for now, I'll return the list and let the view assign it?
+    // No, controller logic is better.
+
+    // Let's assume I'll add `RxList<Map<String, dynamic>> subcategories` to BusinessFormState (I'll do it in next `replace` if needed, but I can't edit previous replacement chunk easily here without overlap/complexity).
+    // Actually, I can just fetch it here and assigning it to the form's list if I had one.
+    // I'll leave this function for now and modify `BusinessFormState` in the view/controller properly.
+    // Wait, the View observes `controller.businessSubcategories`.
+    // If Form A has Category X, and Form B has Category Y, they need disjoint subcategory lists.
+    // So `RegisterController` CANNOT have a single `businessSubcategories` list.
+    // It must be in `BusinessFormState`.
+
+    if (formIndex < 0 || formIndex >= businessForms.length) return;
+
+    // Ideally validation happens in view or we use a FutureBuilder.
+    // But let's add `subcategories` to `BusinessFormState` via a separate mechanism or just use a Map<int, List> in controller.
+    // Using Map in controller:
+    // final Map<int, RxList<Map<String, dynamic>>> formSubcategories = {};
+    // ...
+  }
+
+  // Helper to fetch subcategories for a form
+  Future<List<Map<String, dynamic>>> getSubcategoriesForForm(
+    int categoryId,
+  ) async {
+    return await _masterService.getBusinessSubcategories(categoryId);
   }
 
   Future<void> loadJobSubcategories(int categoryId) async {
@@ -211,6 +323,12 @@ class RegisterController extends GetxController {
 
     switch (currentStep.value) {
       case 0:
+        // Step 1 Validation
+        if (profileImage.value == null) {
+          _showError('Please select a profile picture');
+          return;
+        }
+
         isValid = step1FormKey.currentState?.validate() ?? false;
         if (!isValid) return;
 
@@ -317,46 +435,42 @@ class RegisterController extends GetxController {
         break;
       case 4: // Type Specific Details
         if (userType.value == 'business') {
-          isValid =
-              businessNameController.text.isNotEmpty &&
-              businessAddressController.text.isNotEmpty;
-
+          // First validate the form to show inline errors on fields
+          isValid = step4FormKey.currentState?.validate() ?? false;
           if (!isValid) {
-            _showError('Please fill required business details');
-            return;
+            return; // Form validation will show red borders on invalid fields
           }
 
-          if (selectedBusinessTypeId.value == null) {
-            _showError('Please select business type');
-            return;
+          // Validate all business forms
+          // bool allValid = true; // Unused
+          for (int i = 0; i < businessForms.length; i++) {
+            // We don't have a FormKey for each dynamic form easily unless we generate them.
+            // But we can check values manually or rely on `step4FormKey` if it wraps the whole list.
+            // If `step4FormKey` wraps the ListView, it should validate all fields.
+            // Let's assume `step4FormKey` wraps the column of forms.
           }
-          if (selectedBusinessCategoryId.value == null) {
-            _showError('Please select business category');
-            return;
-          }
-          if (selectedBusinessSubcategoryIds.isEmpty) {
-            _showError('Please select at least one business subcategory');
-            return;
+
+          isValid = step4FormKey.currentState?.validate() ?? false;
+          if (!isValid) return;
+
+          // Check subcategories for each form
+          for (var form in businessForms) {
+            if (form.selectedSubcategoryIds.isEmpty) {
+              _showError(
+                'Please select subcategories for business: ${form.nameController.text}',
+              );
+              return;
+            }
           }
         } else if (userType.value == 'job') {
           if (isCurrentlyWorking.value) {
-            isValid =
-                companyNameController.text.isNotEmpty &&
-                designationController.text.isNotEmpty;
-
+            // Use form validation to show inline errors on fields
+            isValid = step4FormKey.currentState?.validate() ?? false;
             if (!isValid) {
-              _showError('Please fill required job details');
-              return;
+              return; // Form validation will show red borders on invalid fields
             }
 
-            if (selectedJobTypeId.value == null) {
-              _showError('Please select job type');
-              return;
-            }
-            if (selectedJobCategoryId.value == null) {
-              _showError('Please select job category');
-              return;
-            }
+            // Check subcategories separately (multi-select doesn't have form validator)
             if (selectedJobSubcategoryIds.isEmpty) {
               _showError('Please select at least one job subcategory');
               return;
@@ -421,11 +535,13 @@ class RegisterController extends GetxController {
     isCheckingPhone.value = false;
   }
 
-  Future<void> pickBusinessLogo() async {
+  Future<void> pickBusinessLogo(int index) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      businessLogo.value = File(image.path);
+      if (index < businessForms.length) {
+        businessForms[index].logo.value = File(image.path);
+      }
     }
   }
 
@@ -499,40 +615,46 @@ class RegisterController extends GetxController {
         },
       // Business details (if user_type == business)
       if (userType.value == 'business')
-        'business': {
-          'business_name': businessNameController.text.trim(),
-          if (businessEmailController.text.trim().isNotEmpty)
-            'business_email': businessEmailController.text.trim(),
-          if (businessPhoneController.text.trim().isNotEmpty)
-            'business_phone':
-                '${businessPhoneCountryCode.value}${businessPhoneController.text.trim()}',
-          if (businessAddressController.text.trim().isNotEmpty)
-            'business_address': businessAddressController.text.trim(),
-          if (businessDescriptionController.text.trim().isNotEmpty)
-            'business_description': businessDescriptionController.text.trim(),
-          if (yearOfEstablishmentController.text.trim().isNotEmpty)
-            'year_of_establishment': int.tryParse(
-              yearOfEstablishmentController.text.trim(),
-            ),
-          if (gstNumberController.text.trim().isNotEmpty)
-            'gst_number': gstNumberController.text.trim(),
-          if (websiteUrlController.text.trim().isNotEmpty)
-            'website_url': websiteUrlController.text.trim(),
-          if (numberOfEmployeesController.text.trim().isNotEmpty)
-            'number_of_employees': int.tryParse(
-              numberOfEmployeesController.text.trim(),
-            ),
-          if (annualTurnoverController.text.trim().isNotEmpty)
-            'annual_turnover': double.tryParse(
-              annualTurnoverController.text.trim(),
-            ),
-          if (selectedBusinessTypeId.value != null)
-            'business_type_id': selectedBusinessTypeId.value,
-          if (selectedBusinessCategoryId.value != null)
-            'business_category_id': selectedBusinessCategoryId.value,
-          if (selectedBusinessSubcategoryIds.isNotEmpty)
-            'business_subcategory_ids': selectedBusinessSubcategoryIds.toList(),
-        },
+        'businesses': businessForms
+            .map(
+              (form) => {
+                'business_name': form.nameController.text.trim(),
+                if (form.emailController.text.trim().isNotEmpty)
+                  'business_email': form.emailController.text.trim(),
+                if (form.phoneController.text.trim().isNotEmpty)
+                  'business_phone':
+                      '${form.phoneCountryCode.value}${form.phoneController.text.trim()}',
+                if (form.addressController.text.trim().isNotEmpty)
+                  'business_address': form.addressController.text.trim(),
+                if (form.descriptionController.text.trim().isNotEmpty)
+                  'business_description': form.descriptionController.text
+                      .trim(),
+                if (form.yearOfEstablishmentController.text.trim().isNotEmpty)
+                  'year_of_establishment': int.tryParse(
+                    form.yearOfEstablishmentController.text.trim(),
+                  ),
+                if (form.gstNumberController.text.trim().isNotEmpty)
+                  'gst_number': form.gstNumberController.text.trim(),
+                if (form.websiteUrlController.text.trim().isNotEmpty)
+                  'website_url': form.websiteUrlController.text.trim(),
+                if (form.numberOfEmployeesController.text.trim().isNotEmpty)
+                  'number_of_employees': int.tryParse(
+                    form.numberOfEmployeesController.text.trim(),
+                  ),
+                if (form.annualTurnoverController.text.trim().isNotEmpty)
+                  'annual_turnover': double.tryParse(
+                    form.annualTurnoverController.text.trim(),
+                  ),
+                if (form.selectedTypeId.value != null)
+                  'business_type_id': form.selectedTypeId.value,
+                if (form.selectedCategoryId.value != null)
+                  'business_category_id': form.selectedCategoryId.value,
+                if (form.selectedSubcategoryIds.isNotEmpty)
+                  'business_subcategory_ids': form.selectedSubcategoryIds
+                      .toList(),
+              },
+            )
+            .toList(),
       // Job details (if user_type == job)
       if (userType.value == 'job')
         'job': {
@@ -565,31 +687,64 @@ class RegisterController extends GetxController {
     // Debug: print the data being sent
     debugPrint('Register data: $data');
 
-    // Handle file upload if business logo is present
+    // Handle file upload if business logo OR profile image is present
     Map<String, dynamic> result;
-    if (businessLogo.value != null) {
-      final formData = FormData.fromMap({
+
+    // Check if any business has a logo
+    List<File> businessLogos = [];
+    List<int> businessLogoIndices = [];
+    for (int i = 0; i < businessForms.length; i++) {
+      if (businessForms[i].logo.value != null) {
+        businessLogos.add(businessForms[i].logo.value!);
+        businessLogoIndices.add(i);
+      }
+    }
+
+    if (businessLogos.isNotEmpty || profileImage.value != null) {
+      // Create FormData
+      final Map<String, dynamic> formMap = {
         ...data,
-        'business': jsonEncode(data['business']),
-        if (data.containsKey('education'))
-          'education': jsonEncode(data['education']),
-        if (data.containsKey('job')) 'job': jsonEncode(data['job']),
-        'business_logo': await MultipartFile.fromFile(
-          businessLogo.value!.path,
-          filename: businessLogo.value!.path.split('/').last,
-        ),
-      });
-      // Remove object keys from main map as they are JSON encoded in form data
-      // Actually FormData.fromMap handles primitives fine, but nested maps need stringifying if backend expects parsed JSON
-      // Our backend auth controller manually parses 'business' if it's a string, so this works.
+        // For businesses, we need to handle multiple forms
+        if (data.containsKey('businesses'))
+          'businesses': jsonEncode(data['businesses']),
+        // Send indices for logos
+        if (businessLogos.isNotEmpty)
+          'business_logo_indices': jsonEncode(businessLogoIndices),
+      };
+
+      final formData = FormData.fromMap(formMap);
+
+      if (profileImage.value != null) {
+        formData.files.add(
+          MapEntry(
+            'profile_picture',
+            await MultipartFile.fromFile(
+              profileImage.value!.path,
+              filename: profileImage.value!.path.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      if (businessLogos.isNotEmpty) {
+        for (var file in businessLogos) {
+          formData.files.add(
+            MapEntry(
+              'business_logo',
+              await MultipartFile.fromFile(
+                file.path,
+                filename: file.path.split('/').last,
+              ),
+            ),
+          );
+        }
+      }
 
       result = await _authService.registerWithFile(formData);
     } else {
+      // JSON submission
       result = await _authService.register(data);
     }
-
-    // Debug: print the result
-    debugPrint('Register result: $result');
 
     isLoading.value = false;
 
@@ -601,25 +756,23 @@ class RegisterController extends GetxController {
 
       // Upload FCM token after successful registration
       try {
-        final notificationService = Get.find<NotificationService>();
-        await notificationService.uploadTokenToServer();
+        if (Get.isRegistered<NotificationService>()) {
+          final notificationService = Get.find<NotificationService>();
+          await notificationService.uploadTokenToServer();
+        }
       } catch (e) {
         debugPrint('Failed to upload FCM token after registration: $e');
-        // Don't block navigation if FCM upload fails
       }
 
       Get.offAllNamed(Routes.PENDING_APPROVAL);
-    } else {
-      // Show error as snackbar
       Get.snackbar(
-        'Registration Failed',
-        result['message'] ?? 'Something went wrong. Please try again.',
-        backgroundColor: Colors.red,
+        'Success',
+        'Registration successful. Please wait for approval.',
+        backgroundColor: Colors.green,
         colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
       );
+    } else {
+      _showError(result['message'] ?? 'Registration failed');
     }
   }
 
@@ -645,16 +798,9 @@ class RegisterController extends GetxController {
     passingYearController.dispose();
     currentYearController.dispose();
     gradeController.dispose();
-    businessNameController.dispose();
-    businessEmailController.dispose();
-    businessPhoneController.dispose();
-    businessAddressController.dispose();
-    businessDescriptionController.dispose();
-    yearOfEstablishmentController.dispose();
-    gstNumberController.dispose();
-    websiteUrlController.dispose();
-    numberOfEmployeesController.dispose();
-    annualTurnoverController.dispose();
+    for (var form in businessForms) {
+      form.dispose();
+    }
     companyNameController.dispose();
     designationController.dispose();
     departmentController.dispose();

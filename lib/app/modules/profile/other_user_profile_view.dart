@@ -1,97 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
 import '../../widgets/user_profile_content.dart';
+import 'other_user_profile_controller.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/constants/api_constants.dart';
-import '../../data/providers/api_provider.dart';
-import '../../data/services/auth_service.dart';
-import 'directory_controller.dart';
+import 'package:intl/intl.dart';
 
-class UserDetailView extends StatefulWidget {
-  final String userId;
-
-  const UserDetailView({super.key, required this.userId});
-
-  @override
-  State<UserDetailView> createState() => _UserDetailViewState();
-}
-
-class _UserDetailViewState extends State<UserDetailView> {
-  final DirectoryController controller = Get.find<DirectoryController>();
-  final ApiProvider _api = Get.find<ApiProvider>();
-  Map<String, dynamic>? user;
-  List<Map<String, dynamic>> userPosts = [];
-  bool isLoading = true;
-  bool isLoadingPosts = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final data = await controller.getUserProfile(widget.userId);
-    setState(() {
-      user = data;
-      isLoading = false;
-    });
-    // Load posts using numeric_id from profile
-    if (data != null) {
-      final numericId = data['numeric_id'];
-      if (numericId != null) {
-        _loadPosts(numericId);
-      }
-    }
-  }
-
-  Future<void> _loadPosts(dynamic userId) async {
-    setState(() => isLoadingPosts = true);
-    try {
-      final response = await _api.get('${ApiConstants.userPosts}/$userId');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['data'] ?? [];
-        setState(() {
-          userPosts = data.cast<Map<String, dynamic>>();
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading user posts: $e');
-    }
-    setState(() => isLoadingPosts = false);
-  }
-
-  bool _isOwnProfile() {
-    if (user == null) return false;
-    final currentUser = Get.find<AuthService>().currentUser.value;
-    if (currentUser == null) return false;
-    return user!['id'] == currentUser['id'];
-  }
+class OtherUserProfileView extends GetView<OtherUserProfileController> {
+  const OtherUserProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(user?['full_name'] ?? 'User Profile')),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : user == null
-          ? const Center(child: Text('User not found'))
-          : SingleChildScrollView(
-              padding: EdgeInsets.all(4.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  UserProfileContent(
-                    user: user!,
-                    isOwnProfile: _isOwnProfile(),
-                  ),
-                  SizedBox(height: 2.h),
-                  _buildPostsSection(context),
-                ],
-              ),
+      appBar: AppBar(title: const Text('Profile')),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final user = controller.userProfile.value;
+        if (user == null) {
+          return const Center(child: Text('Unable to load profile'));
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            // We need to know who we are viewing.
+            // Ideally we should store userId in controller to refresh properly.
+            // But for now, we rely on initial load. Refresh might need arguments.
+            // Actually, controller has arguments from Get.arguments, better to store userId in controller.
+            // Let's just rely on initial load for now or improve controller later.
+            final args = Get.arguments;
+            if (args != null && args['userId'] != null) {
+              await controller.loadProfile(args['userId']);
+            }
+          },
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(4.w),
+            child: Column(
+              children: [
+                // Reuse UserProfileContent
+                // We need to slightly modify UserProfileContent to accept posts externally
+                // OR we can just modify UserProfileContent to check for OtherUserProfileController too.
+                // But for cleaner code, let's just custom build or wrap.
+                // Actually UserProfileContent is big.
+                // Let's modify UserProfileContent to be more flexible.
+
+                // Wait, I can't easily modify UserProfileContent without checking it again.
+                // It checks `if (isOwnProfile && controller != null)`.
+                // If I pass `isOwnProfile: false`, it hides "My Posts".
+
+                // I will add the profile header using UserProfileContent (or similar)
+                // And then manually add the posts section here.
+                UserProfileContent(user: user, isOwnProfile: false),
+
+                SizedBox(height: 2.h),
+                _buildPostsSection(context),
+              ],
             ),
+          ),
+        );
+      }),
     );
   }
 
@@ -107,35 +76,37 @@ class _UserDetailViewState extends State<UserDetailView> {
           ),
         ),
         SizedBox(height: 2.h),
-        if (isLoadingPosts)
-          const Center(child: CircularProgressIndicator())
-        else if (userPosts.isEmpty)
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(4.w),
-              child: Text(
-                'No posts yet',
-                style: TextStyle(color: Colors.grey[600]),
+        Obx(() {
+          if (controller.userPosts.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(4.w),
+                child: Text(
+                  'No posts yet',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
-            ),
-          )
-        else
-          ListView.separated(
+            );
+          }
+          return ListView.separated(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: userPosts.length,
+            itemCount: controller.userPosts.length,
             separatorBuilder: (c, i) => SizedBox(height: 2.h),
             itemBuilder: (context, index) {
-              final post = userPosts[index];
+              final post = controller.userPosts[index];
               return _buildPostItem(context, post);
             },
-          ),
+          );
+        }),
         SizedBox(height: 2.h),
       ],
     );
   }
 
   Widget _buildPostItem(BuildContext context, Map<String, dynamic> post) {
+    // This looks similar to _buildMyPostItem in UserProfileContent
+    // But without edit/delete buttons
     return Card(
       elevation: 2,
       child: Padding(

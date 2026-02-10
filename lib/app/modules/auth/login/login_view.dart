@@ -7,7 +7,9 @@ import '../../../core/theme/app_theme.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
-  const LoginView({super.key});
+  LoginView({super.key});
+
+  final _formKey = GlobalKey<FormState>();
 
   Future<bool> _onWillPop() async {
     final result = await Get.dialog<bool>(
@@ -67,7 +69,7 @@ class LoginView extends GetView<LoginController> {
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 6.w),
             child: Form(
-              key: controller.formKey,
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -137,8 +139,6 @@ class LoginView extends GetView<LoginController> {
                   ),
                   SizedBox(height: 4.h),
 
-                  // Error message removed - using snackbar only
-
                   // Login field
                   TextFormField(
                     controller: controller.loginController,
@@ -202,7 +202,11 @@ class LoginView extends GetView<LoginController> {
                       child: ElevatedButton(
                         onPressed: controller.isLoading.value
                             ? null
-                            : controller.login,
+                            : () {
+                                if (_formKey.currentState!.validate()) {
+                                  controller.login();
+                                }
+                              },
                         child: controller.isLoading.value
                             ? const SizedBox(
                                 width: 24,

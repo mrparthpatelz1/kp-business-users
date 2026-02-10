@@ -20,6 +20,13 @@ class ProfileController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Sync profile with AuthService
+    ever(_authService.currentUser, (user) {
+      if (user != null) {
+        profile.value = user;
+      }
+    });
+
     loadProfile();
     loadMyPosts();
   }

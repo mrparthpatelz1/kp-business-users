@@ -117,6 +117,15 @@ class ApiProvider extends GetxService {
     );
   }
 
+  // PUT with FormData
+  Future<Response> putFormData(String path, FormData formData) async {
+    return await _dio.put(
+      path,
+      data: formData,
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+    );
+  }
+
   // PUT request
   Future<Response> put(String path, {dynamic data}) async {
     return await _dio.put(path, data: data);
@@ -147,6 +156,19 @@ class ApiProvider extends GetxService {
       path,
       data: formData,
       options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+    );
+  }
+
+  // Download file
+  Future<Response> download(
+    String urlPath,
+    String savePath, {
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    return await _dio.download(
+      urlPath,
+      savePath,
+      onReceiveProgress: onReceiveProgress,
     );
   }
 }

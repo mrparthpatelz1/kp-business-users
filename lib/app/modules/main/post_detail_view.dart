@@ -3,12 +3,13 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
+import '../../widgets/user_avatar.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import '../posts/comments/comments_controller.dart';
 import '../chat/chat_controller.dart';
+
 import '../../data/services/storage_service.dart';
-import '../../routes/app_routes.dart';
 
 class PostDetailView extends StatelessWidget {
   final Map<String, dynamic> post;
@@ -30,248 +31,321 @@ class PostDetailView extends StatelessWidget {
     final isAd = postType == 'ad';
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar - Large image header ONLY for ads
-          if (isAd)
-            SliverAppBar(
-              expandedHeight: 35.h,
-              pinned: true,
-              flexibleSpace: FlexibleSpaceBar(
-                background: post['image_url'] != null
-                    ? Stack(
-                        fit: StackFit.expand,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // App Bar - Large image header ONLY for ads
+                  if (isAd)
+                    SliverAppBar(
+                      expandedHeight: 35.h,
+                      pinned: true,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: post['image_url'] != null
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    post['image_url'].startsWith('http')
+                                        ? post['image_url']
+                                        : '${ApiConstants.assetBaseUrl}${post['image_url']}',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: _getPostTypeColor(
+                                        postType,
+                                      ).withValues(alpha: 0.1),
+                                      child: Icon(
+                                        _getPostTypeIcon(postType),
+                                        size: 100,
+                                        color: _getPostTypeColor(postType),
+                                      ),
+                                    ),
+                                  ),
+                                  // Gradient overlay for better readability
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.7),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Container(
+                                color: _getPostTypeColor(
+                                  postType,
+                                ).withValues(alpha: 0.1),
+                                child: Icon(
+                                  _getPostTypeIcon(postType),
+                                  size: 100,
+                                  color: _getPostTypeColor(postType),
+                                ),
+                              ),
+                      ),
+                    )
+                  else
+                    // Regular AppBar for non-ad posts
+                    SliverAppBar(
+                      pinned: true,
+                      title: Text(_getPostTypeLabel(postType)),
+                    ),
+
+                  // Content
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(4.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Image.network(
-                            post['image_url'].startsWith('http')
-                                ? post['image_url']
-                                : '${ApiConstants.assetBaseUrl}${post['image_url']}',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                          // Author Info at Top
+                          if (post['author'] != null) ...[
+                            _buildAuthorHeader(context, post),
+                            SizedBox(height: 2.h),
+                            const Divider(),
+                            SizedBox(height: 2.h),
+                          ],
+
+                          // Post Type Badge
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 3.w,
+                              vertical: 1.h,
+                            ),
+                            decoration: BoxDecoration(
                               color: _getPostTypeColor(
                                 postType,
                               ).withValues(alpha: 0.1),
-                              child: Icon(
-                                _getPostTypeIcon(postType),
-                                size: 100,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
                                 color: _getPostTypeColor(postType),
                               ),
                             ),
-                          ),
-                          // Gradient overlay for better readability
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.7),
-                                ],
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getPostTypeIcon(postType),
+                                  color: _getPostTypeColor(postType),
+                                  size: 16,
+                                ),
+                                SizedBox(width: 1.w),
+                                Text(
+                                  _getPostTypeLabel(postType),
+                                  style: TextStyle(
+                                    color: _getPostTypeColor(postType),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12.sp,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          SizedBox(height: 2.h),
+
+                          // Title and Share Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  post['title'] ?? 'Post',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  final String link =
+                                      'kpbusiness://post?id=${post['id']}';
+                                  Share.share(
+                                    'Check out this post: ${post['title']}\n$link',
+                                  );
+                                },
+                                icon: const Icon(Icons.share),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 1.h),
+
+                          // Posted Date
+                          if (post['created_at'] != null) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  size: 16,
+                                  color: Colors.grey[600],
+                                ),
+                                SizedBox(width: 1.w),
+                                Text(
+                                  'Posted ${_formatDate(post['created_at'])}',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 13.sp,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 2.h),
+                          ],
+
+                          // Description
+                          if (post['description'] != null &&
+                              post['description'].isNotEmpty) ...[
+                            const Divider(),
+                            SizedBox(height: 2.h),
+                            Text(
+                              'Description',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 1.h),
+                            Text(
+                              post['description'],
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                height: 1.5,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            SizedBox(height: 3.h),
+                          ],
+
+                          // Additional metadata for job/investment posts
+                          if (postType == 'job_seeking' ||
+                              postType == 'hiring') ...[
+                            const Divider(),
+                            SizedBox(height: 2.h),
+                            Text(
+                              'Job Details',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 1.h),
+                            if (post['company'] != null)
+                              _buildInfoRow(
+                                Icons.business,
+                                'Company',
+                                post['company'],
+                              ),
+                            if (post['location'] != null)
+                              _buildInfoRow(
+                                Icons.location_on,
+                                'Location',
+                                post['location'],
+                              ),
+                            if (post['salary'] != null)
+                              _buildInfoRow(
+                                Icons.currency_rupee,
+                                'Salary',
+                                post['salary'],
+                              ),
+                            SizedBox(height: 2.h),
+                          ],
+
+                          if (postType == 'investment') ...[
+                            const Divider(),
+                            SizedBox(height: 2.h),
+                            Text(
+                              'Investment Details',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 1.h),
+                            if (post['investment_amount'] != null)
+                              _buildInfoRow(
+                                Icons.currency_rupee,
+                                'Amount',
+                                post['investment_amount'],
+                              ),
+                            if (post['returns'] != null)
+                              _buildInfoRow(
+                                Icons.trending_up,
+                                'Returns',
+                                post['returns'],
+                              ),
+                            SizedBox(height: 2.h),
+                          ],
                         ],
-                      )
-                    : Container(
-                        color: _getPostTypeColor(
-                          postType,
-                        ).withValues(alpha: 0.1),
-                        child: Icon(
-                          _getPostTypeIcon(postType),
-                          size: 100,
-                          color: _getPostTypeColor(postType),
-                        ),
                       ),
-              ),
-            )
-          else
-            // Regular AppBar for non-ad posts
-            SliverAppBar(
-              pinned: true,
-              title: Text(_getPostTypeLabel(postType)),
-            ),
-
-          // Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(4.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Author Info at Top
-                  if (post['author'] != null) ...[
-                    _buildAuthorHeader(context, post),
-                    SizedBox(height: 2.h),
-                    const Divider(),
-                    SizedBox(height: 2.h),
-                  ],
-
-                  // Post Type Badge
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 3.w,
-                      vertical: 1.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getPostTypeColor(postType).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _getPostTypeColor(postType)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _getPostTypeIcon(postType),
-                          color: _getPostTypeColor(postType),
-                          size: 16,
-                        ),
-                        SizedBox(width: 1.w),
-                        Text(
-                          _getPostTypeLabel(postType),
-                          style: TextStyle(
-                            color: _getPostTypeColor(postType),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                  SizedBox(height: 2.h),
 
-                  // Title and Share Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          post['title'] ?? 'Post',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          final String link =
-                              'kpbusiness://post?id=${post['id']}';
-                          Share.share(
-                            'Check out this post: ${post['title']}\n$link',
-                          );
-                        },
-                        icon: const Icon(Icons.share),
-                      ),
-                    ],
+                  // Comments Section
+                  SliverToBoxAdapter(
+                    child: _buildCommentsSection(context, commentsController),
                   ),
-                  SizedBox(height: 1.h),
-
-                  // Posted Date
-                  if (post['created_at'] != null) ...[
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        SizedBox(width: 1.w),
-                        Text(
-                          'Posted ${_formatDate(post['created_at'])}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 2.h),
-                  ],
-
-                  // Description
-                  if (post['description'] != null &&
-                      post['description'].isNotEmpty) ...[
-                    const Divider(),
-                    SizedBox(height: 2.h),
-                    Text(
-                      'Description',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 1.h),
-                    Text(
-                      post['description'],
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        height: 1.5,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    SizedBox(height: 3.h),
-                  ],
-
-                  // Additional metadata for job/investment posts
-                  if (postType == 'job_seeking' || postType == 'hiring') ...[
-                    const Divider(),
-                    SizedBox(height: 2.h),
-                    Text(
-                      'Job Details',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 1.h),
-                    if (post['company'] != null)
-                      _buildInfoRow(Icons.business, 'Company', post['company']),
-                    if (post['location'] != null)
-                      _buildInfoRow(
-                        Icons.location_on,
-                        'Location',
-                        post['location'],
-                      ),
-                    if (post['salary'] != null)
-                      _buildInfoRow(
-                        Icons.currency_rupee,
-                        'Salary',
-                        post['salary'],
-                      ),
-                    SizedBox(height: 2.h),
-                  ],
-
-                  if (postType == 'investment') ...[
-                    const Divider(),
-                    SizedBox(height: 2.h),
-                    Text(
-                      'Investment Details',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 1.h),
-                    if (post['investment_amount'] != null)
-                      _buildInfoRow(
-                        Icons.currency_rupee,
-                        'Amount',
-                        post['investment_amount'],
-                      ),
-                    if (post['returns'] != null)
-                      _buildInfoRow(
-                        Icons.trending_up,
-                        'Returns',
-                        post['returns'],
-                      ),
-                    SizedBox(height: 2.h),
-                  ],
+                  SliverPadding(padding: EdgeInsets.only(bottom: 4.h)),
                 ],
               ),
             ),
-          ),
+            _buildCommentInput(context, commentsController),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Comments Section
-          SliverToBoxAdapter(
-            child: _buildCommentsSection(context, commentsController),
+  Widget _buildCommentInput(
+    BuildContext context,
+    CommentsController controller,
+  ) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
           ),
-          SliverPadding(padding: EdgeInsets.only(bottom: 4.h)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller.commentController,
+              decoration: InputDecoration(
+                hintText: 'Write a comment...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 4.w,
+                  vertical: 1.h,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 2.w),
+          Obx(
+            () => IconButton(
+              onPressed: controller.isSubmitting.value
+                  ? null
+                  : () => controller.addComment(),
+              icon: controller.isSubmitting.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.send, color: AppTheme.primaryColor),
+            ),
+          ),
         ],
       ),
     );
@@ -359,8 +433,8 @@ class PostDetailView extends StatelessWidget {
     final isOwnPost =
         currentUser != null &&
         post['author'] != null &&
-        (post['author']['id'] == currentUser['id'] ||
-            post['user']?['id'] == currentUser['uuid']);
+        (post['author']['uuid'] == currentUser['id'] ||
+            post['user']?['id'] == currentUser['id']);
 
     return Container(
       padding: EdgeInsets.all(3.w),
@@ -370,17 +444,10 @@ class PostDetailView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          UserAvatar(
             radius: 24,
-            backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-            child: Text(
-              (post['author']['full_name'] ?? 'U')[0].toUpperCase(),
-              style: TextStyle(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18.sp,
-              ),
-            ),
+            imageUrl: post['author']?['profile_picture'],
+            name: post['author']?['full_name'] ?? 'U',
           ),
           SizedBox(width: 3.w),
           Expanded(
@@ -490,27 +557,16 @@ class PostDetailView extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         // Navigate to commenter's profile
-                        final commenterId = comment['user_id'];
-                        Get.toNamed(
-                          Routes.FULL_PROFILE,
-                          arguments: {'userId': commenterId},
-                        );
+                        // final commenterId = comment['user_id'];
+                        // Get.toNamed(
+                        //   Routes.OTHER_USER_PROFILE,
+                        //   arguments: {'userId': commenterId},
+                        // );
                       },
-                      child: CircleAvatar(
+                      child: UserAvatar(
                         radius: 18,
-                        backgroundColor: Colors.grey[200],
-                        backgroundImage: comment['user_photo'] != null
-                            ? NetworkImage(
-                                ApiConstants.getFullUrl(comment['user_photo']),
-                              )
-                            : null,
-                        child: comment['user_photo'] == null
-                            ? const Icon(
-                                Icons.person,
-                                color: Colors.grey,
-                                size: 20,
-                              )
-                            : null,
+                        imageUrl: comment['user_photo'],
+                        name: comment['user_name'] ?? 'User',
                       ),
                     ),
                     SizedBox(width: 3.w),
@@ -530,11 +586,11 @@ class PostDetailView extends StatelessWidget {
                                 GestureDetector(
                                   onTap: () {
                                     // Navigate to commenter's profile
-                                    final commenterId = comment['user_id'];
-                                    Get.toNamed(
-                                      Routes.FULL_PROFILE,
-                                      arguments: {'userId': commenterId},
-                                    );
+                                    // final commenterId = comment['user_id'];
+                                    // Get.toNamed(
+                                    //   Routes.FULL_PROFILE,
+                                    //   arguments: {'userId': commenterId},
+                                    // );
                                   },
                                   child: Text(
                                     comment['user_name'] ?? 'User',
@@ -618,48 +674,6 @@ class PostDetailView extends StatelessWidget {
               },
             );
           }),
-
-          SizedBox(height: 2.h),
-
-          // Add Comment Input
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller.commentController,
-                  decoration: InputDecoration(
-                    hintText: 'Write a comment...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 4.w,
-                      vertical: 1.h,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 2.w),
-              Obx(
-                () => IconButton(
-                  onPressed: controller.isSubmitting.value
-                      ? null
-                      : () => controller.addComment(),
-                  icon: controller.isSubmitting.value
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(Icons.send, color: AppTheme.primaryColor),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 2.h), // Safe area bottom
         ],
       ),
     );

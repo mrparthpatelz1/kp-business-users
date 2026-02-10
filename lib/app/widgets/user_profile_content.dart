@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:intl/intl.dart';
 import '../core/theme/app_theme.dart';
+import 'user_avatar.dart';
 import '../modules/profile/profile_controller.dart';
+import '../modules/chat/chat_controller.dart';
 
 import '../routes/app_routes.dart';
 
@@ -170,22 +172,10 @@ class UserProfileContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Avatar
-                  CircleAvatar(
+                  UserAvatar(
                     radius: 35,
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                    backgroundImage: user['profile_photo'] != null
-                        ? NetworkImage(user['profile_photo'])
-                        : null,
-                    child: user['profile_photo'] == null
-                        ? Text(
-                            (user['full_name'] ?? 'U')[0].toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 28,
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
+                    imageUrl: user['profile_picture'],
+                    name: user['full_name'] ?? 'U',
                   ),
                   SizedBox(width: 4.w),
                   // Info
@@ -263,34 +253,76 @@ class UserProfileContent extends StatelessWidget {
             Positioned(
               bottom: 2.w,
               right: 2.w,
-              child: TextButton(
-                onPressed: () {
-                  Get.toNamed(Routes.FULL_PROFILE, arguments: user);
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontSize: 14.sp,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isOwnProfile && user['numeric_id'] != null)
+                    TextButton.icon(
+                      onPressed: () {
+                        final chatController = Get.put(ChatController());
+                        chatController.startConversation(user['numeric_id']);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 2.w,
+                          vertical: 0,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: Icon(
+                        Icons.message_rounded,
+                        size: 14.sp,
                         color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
+                      ),
+                      label: Text(
+                        'Message',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    SizedBox(width: 1.w),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 10.sp,
-                      color: AppTheme.primaryColor,
+                  if (!isOwnProfile && user['numeric_id'] != null)
+                    SizedBox(width: 2.w),
+                  TextButton(
+                    onPressed: () {
+                      Get.toNamed(Routes.FULL_PROFILE, arguments: user);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 2.w,
+                        vertical: 0,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'View Profile',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 1.w),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 10.sp,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

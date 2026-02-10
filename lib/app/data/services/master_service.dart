@@ -9,7 +9,9 @@ class MasterService extends GetxService {
   // Get all villages
   Future<List<Map<String, dynamic>>> getVillages() async {
     try {
-      debugPrint('MasterService: Fetching villages from ${ApiConstants.villages}');
+      debugPrint(
+        'MasterService: Fetching villages from ${ApiConstants.villages}',
+      );
       final response = await _api.get(ApiConstants.villages);
       debugPrint('MasterService: Villages response: ${response.data}');
       return List<Map<String, dynamic>>.from(response.data['data']);
@@ -40,9 +42,13 @@ class MasterService extends GetxService {
   }
 
   // Get business subcategories
-  Future<List<Map<String, dynamic>>> getBusinessSubcategories(int categoryId) async {
+  Future<List<Map<String, dynamic>>> getBusinessSubcategories(
+    int categoryId,
+  ) async {
     try {
-      final response = await _api.get('${ApiConstants.businessSubcategories}/$categoryId');
+      final response = await _api.get(
+        '${ApiConstants.businessSubcategories}/$categoryId',
+      );
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (_) {
       return [];
@@ -72,7 +78,9 @@ class MasterService extends GetxService {
   // Get job subcategories
   Future<List<Map<String, dynamic>>> getJobSubcategories(int categoryId) async {
     try {
-      final response = await _api.get('${ApiConstants.jobSubcategories}/$categoryId');
+      final response = await _api.get(
+        '${ApiConstants.jobSubcategories}/$categoryId',
+      );
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (_) {
       return [];
@@ -94,9 +102,13 @@ class MasterService extends GetxService {
   // Get all countries
   Future<List<Map<String, dynamic>>> getCountries() async {
     try {
-      debugPrint('MasterService: Fetching countries from ${ApiConstants.countries}');
+      debugPrint(
+        'MasterService: Fetching countries from ${ApiConstants.countries}',
+      );
       final response = await _api.get(ApiConstants.countries);
-      debugPrint('MasterService: Countries response length: ${response.data['data']?.length}');
+      debugPrint(
+        'MasterService: Countries response length: ${response.data['data']?.length}',
+      );
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (e) {
       debugPrint('MasterService: Error fetching countries: $e');
@@ -109,7 +121,9 @@ class MasterService extends GetxService {
     try {
       debugPrint('MasterService: Fetching states for $countryCode');
       final response = await _api.get('${ApiConstants.states}/$countryCode');
-      debugPrint('MasterService: States response length: ${response.data['data']?.length}');
+      debugPrint(
+        'MasterService: States response length: ${response.data['data']?.length}',
+      );
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (e) {
       debugPrint('MasterService: Error fetching states: $e');
@@ -118,12 +132,44 @@ class MasterService extends GetxService {
   }
 
   // Get cities by country and state code
-  Future<List<Map<String, dynamic>>> getCities(String countryCode, String stateCode) async {
+  Future<List<Map<String, dynamic>>> getCities(
+    String countryCode,
+    String stateCode,
+  ) async {
     try {
-      final response = await _api.get('${ApiConstants.cities}/$countryCode/$stateCode');
+      final response = await _api.get(
+        '${ApiConstants.cities}/$countryCode/$stateCode',
+      );
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (_) {
       return [];
     }
+  }
+
+  // Get country dial codes
+  List<Map<String, String>> getCountryDialCodes() {
+    return [
+      {'code': '+91', 'country': 'IN', 'name': 'India'},
+      {'code': '+1', 'country': 'US', 'name': 'USA'},
+      {'code': '+44', 'country': 'GB', 'name': 'UK'},
+      {'code': '+971', 'country': 'AE', 'name': 'UAE'},
+      {'code': '+966', 'country': 'SA', 'name': 'Saudi Arabia'},
+      {'code': '+974', 'country': 'QA', 'name': 'Qatar'},
+      {'code': '+968', 'country': 'OM', 'name': 'Oman'},
+      {'code': '+965', 'country': 'KW', 'name': 'Kuwait'},
+      {'code': '+973', 'country': 'BH', 'name': 'Bahrain'},
+      {'code': '+61', 'country': 'AU', 'name': 'Australia'},
+      {'code': '+65', 'country': 'SG', 'name': 'Singapore'},
+      {'code': '+60', 'country': 'MY', 'name': 'Malaysia'},
+      {'code': '+49', 'country': 'DE', 'name': 'Germany'},
+      {'code': '+33', 'country': 'FR', 'name': 'France'},
+      {'code': '+39', 'country': 'IT', 'name': 'Italy'},
+      {'code': '+81', 'country': 'JP', 'name': 'Japan'},
+      {'code': '+86', 'country': 'CN', 'name': 'China'},
+      {'code': '+82', 'country': 'KR', 'name': 'South Korea'},
+      {'code': '+27', 'country': 'ZA', 'name': 'South Africa'},
+      {'code': '+254', 'country': 'KE', 'name': 'Kenya'},
+      {'code': '+234', 'country': 'NG', 'name': 'Nigeria'},
+    ];
   }
 }

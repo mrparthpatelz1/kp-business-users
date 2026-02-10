@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/user_avatar.dart';
 import 'directory_controller.dart';
 import 'user_detail_view.dart';
 
@@ -199,22 +200,11 @@ class DirectoryView extends GetView<DirectoryController> {
           child: Row(
             children: [
               // Profile Photo
-              CircleAvatar(
+              UserAvatar(
                 radius: 28,
-                backgroundColor: isBusinessUser
-                    ? AppTheme.primaryColor.withOpacity(0.1)
-                    : AppTheme.accentColor.withOpacity(0.1),
-                backgroundImage: user['profile_photo'] != null
-                    ? NetworkImage(user['profile_photo'])
-                    : null,
-                child: user['profile_photo'] == null
-                    ? Icon(
-                        isBusinessUser ? Icons.business : Icons.person,
-                        color: isBusinessUser
-                            ? AppTheme.primaryColor
-                            : AppTheme.accentColor,
-                      )
-                    : null,
+                imageUrl: user['profile_picture'],
+                name: user['full_name'] ?? user['surname'],
+                isBusiness: isBusinessUser,
               ),
               SizedBox(width: 4.w),
 

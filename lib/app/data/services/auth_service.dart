@@ -168,6 +168,18 @@ class AuthService extends GetxService {
     }
   }
 
+  // Delete Business
+  Future<Map<String, dynamic>> deleteBusiness(int businessId) async {
+    try {
+      final response = await _api.delete(
+        '${ApiConstants.profile}/business/$businessId',
+      );
+      return {'success': true, 'message': response.data['message']};
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
   Map<String, dynamic> _handleError(DioException e) {
     String message = 'An error occurred';
     String? code;

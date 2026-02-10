@@ -11,6 +11,7 @@ abstract class Routes {
   static const REJECTED = '/rejected';
   static const FULL_PROFILE = '/full-profile';
   static const CREATE_POST = '/create-post';
+  static const OTHER_USER_PROFILE = '/other-user-profile';
   static const CHAT_LIST = '/chat-list';
   static const CHAT_DETAIL = '/chat-detail';
   static const POST_DETAIL = '/post-detail';

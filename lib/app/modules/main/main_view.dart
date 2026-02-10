@@ -11,6 +11,7 @@ import '../directory/directory_controller.dart';
 import '../directory/directory_view.dart';
 import '../announcements/announcements_controller.dart';
 import '../announcements/announcements_view.dart';
+import '../chat/chat_controller.dart';
 import '../posts/posts_controller.dart';
 import '../posts/posts_view.dart';
 import '../posts/post_card_widget.dart';
@@ -113,7 +114,7 @@ class _MainViewState extends State<MainView> {
       },
       child: Obx(
         () => Scaffold(
-          body: _pages[controller.selectedIndex.value],
+          body: SafeArea(child: _pages[controller.selectedIndex.value]),
           bottomNavigationBar: NavigationBar(
             selectedIndex: controller.selectedIndex.value,
             onDestinationSelected: controller.changeTab,
@@ -153,6 +154,8 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = Get.find<AuthService>();
     final postsController = Get.find<PostsController>();
+    final announcementsController = Get.find<AnnouncementsController>();
+    final chatController = Get.put(ChatController());
 
     return Scaffold(
       appBar: AppBar(
@@ -164,18 +167,41 @@ class _HomeTab extends StatelessWidget {
           ],
         ),
         actions: [
-          // Notification icon for Announcements
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: 'Announcements',
-            onPressed: () => Get.to(() => const AnnouncementsView()),
-          ),
-          // Inbox Icon
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline),
-            tooltip: 'Messages',
-            onPressed: () => Get.toNamed(Routes.CHAT_LIST),
-          ),
+          // Notification icon for Announcements with badge
+          Obx(() {
+            final count = announcementsController.unreadCount.value;
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: count > 0,
+                label: Text(
+                  count > 99 ? '99+' : count.toString(),
+                  style: const TextStyle(fontSize: 10),
+                ),
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              tooltip: 'Announcements',
+              onPressed: () {
+                announcementsController.markAllAsSeen();
+                Get.to(() => const AnnouncementsView());
+              },
+            );
+          }),
+          // Inbox Icon with badge
+          Obx(() {
+            final count = chatController.totalUnreadCount.value;
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: count > 0,
+                label: Text(
+                  count > 99 ? '99+' : count.toString(),
+                  style: const TextStyle(fontSize: 10),
+                ),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+              tooltip: 'Messages',
+              onPressed: () => Get.toNamed(Routes.CHAT_LIST),
+            );
+          }),
         ],
       ),
       body: RefreshIndicator(
@@ -183,6 +209,8 @@ class _HomeTab extends StatelessWidget {
           await postsController.loadHomeScreenPosts(refresh: true);
           await postsController.loadPosts(refresh: true);
           await postsController.loadAds();
+          await announcementsController.loadAnnouncements();
+          await chatController.loadUnreadCount();
         },
         child: NotificationListener<ScrollNotification>(
           onNotification: (ScrollNotification scrollInfo) {
@@ -194,6 +222,7 @@ class _HomeTab extends StatelessWidget {
             return false;
           },
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.all(4.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,10 +239,14 @@ class _HomeTab extends StatelessWidget {
                           CircleAvatar(
                             radius: 30,
                             backgroundColor: Colors.white.withOpacity(0.2),
-                            backgroundImage: user?['profile_photo'] != null
-                                ? NetworkImage(user!['profile_photo'])
+                            backgroundImage: user?['profile_picture'] != null
+                                ? NetworkImage(
+                                    ApiConstants.getFullUrl(
+                                      user!['profile_picture'],
+                                    ),
+                                  )
                                 : null,
-                            child: user?['profile_photo'] == null
+                            child: user?['profile_picture'] == null
                                 ? const Icon(
                                     Icons.person,
                                     color: Colors.white,

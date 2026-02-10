@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/constants/api_constants.dart';
+import '../../widgets/user_avatar.dart';
 import '../main/post_detail_view.dart';
 
 /// Shared Post Card Widget - Used by both PostsView and HomeTab
@@ -36,27 +36,14 @@ class PostCard extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  CircleAvatar(
+                  UserAvatar(
                     radius: compact ? 16 : 20,
+                    imageUrl: user?['profile_picture'],
+                    name: user?['name'] ?? 'Anonymous',
                     backgroundColor: getPostTypeColor(
                       postType,
                     ).withOpacity(0.1),
-                    backgroundImage: user?['profile_photo'] != null
-                        ? NetworkImage(
-                            (user!['profile_photo'] as String).startsWith(
-                                  'http',
-                                )
-                                ? user!['profile_photo']
-                                : '${ApiConstants.assetBaseUrl}${user!['profile_photo']}',
-                          )
-                        : null,
-                    child: user?['profile_photo'] == null
-                        ? Icon(
-                            getPostTypeIcon(postType),
-                            color: getPostTypeColor(postType),
-                            size: compact ? 14 : 18,
-                          )
-                        : null,
+                    iconColor: getPostTypeColor(postType),
                   ),
                   SizedBox(width: 3.w),
                   Expanded(

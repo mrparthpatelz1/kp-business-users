@@ -1,10 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart'
+    hide FormData, MultipartFile; // Hide from Get to use Dio's
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'dart:convert'; // For jsonEncode
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart'; // For FormData, MultipartFile
 import '../../data/services/auth_service.dart';
 import '../../data/services/master_service.dart';
 import '../../data/providers/api_provider.dart';
 import '../../core/constants/api_constants.dart';
+
+class BusinessFormState {
+  int? id;
+  final nameController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final addressController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final phoneCountryCode = '+91'.obs;
+  final websiteUrlController = TextEditingController();
+  final gstNumberController = TextEditingController();
+  final numberOfEmployeesController = TextEditingController();
+  final annualTurnoverController = TextEditingController();
+  final yearOfEstablishmentController = TextEditingController();
+
+  final selectedTypeId = Rx<int?>(null);
+  final selectedCategoryId = Rx<int?>(null);
+  final selectedSubcategoryIds = <int>[].obs;
+
+  final Rx<File?> logo = Rx<File?>(null);
+  final Rx<String?> currentLogoUrl = Rx<String?>(
+    null,
+  ); // For existing logo display
+
+  // Logo placeholder - currently edit not supported?
+  // We can add logic later.
+
+  void dispose() {
+    nameController.dispose();
+    descriptionController.dispose();
+    addressController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    websiteUrlController.dispose();
+    gstNumberController.dispose();
+    numberOfEmployeesController.dispose();
+    annualTurnoverController.dispose();
+    yearOfEstablishmentController.dispose();
+  }
+}
 
 class EditProfileController extends GetxController {
   final ApiProvider _api = Get.find<ApiProvider>();
@@ -73,28 +118,19 @@ class EditProfileController extends GetxController {
   final RxInt selectedJobCategoryId = 0.obs;
   final RxList<int> selectedJobSubcategoryIds = <int>[].obs;
 
-  // Business Details
-  final businessNameController = TextEditingController();
-  final businessDescriptionController = TextEditingController();
-  final businessAddressController = TextEditingController();
-  final businessEmailController = TextEditingController();
-  final businessPhoneController = TextEditingController();
-  final businessWebsiteController = TextEditingController();
-  final businessGstController = TextEditingController();
-  final businessEmployeesController = TextEditingController();
-  final businessTurnoverController = TextEditingController();
-  final businessEstablishmentYearController = TextEditingController();
+  // Business Details List
+  final RxList<BusinessFormState> businessForms = <BusinessFormState>[].obs;
 
-  // Business Categories
+  // Business Categories for Dropdowns (shared but selection is per form)
   final RxList<Map<String, dynamic>> businessTypes =
       <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> businessCategories =
       <Map<String, dynamic>>[].obs;
-  final RxList<Map<String, dynamic>> businessSubcategories =
+  final RxList<Map<String, dynamic>> countryDialCodes =
       <Map<String, dynamic>>[].obs;
-  final RxInt selectedBusinessTypeId = 0.obs;
-  final RxInt selectedBusinessCategoryId = 0.obs;
-  final RxList<int> selectedBusinessSubcategoryIds = <int>[].obs;
+
+  // Profile Picture
+  final Rx<File?> profileImage = Rx<File?>(null);
 
   Map<String, dynamic>? originalProfile;
 
@@ -122,16 +158,9 @@ class EditProfileController extends GetxController {
     jobDesignationController.dispose();
     jobDepartmentController.dispose();
     jobExperienceController.dispose();
-    businessNameController.dispose();
-    businessDescriptionController.dispose();
-    businessAddressController.dispose();
-    businessEmailController.dispose();
-    businessPhoneController.dispose();
-    businessWebsiteController.dispose();
-    businessGstController.dispose();
-    businessEmployeesController.dispose();
-    businessTurnoverController.dispose();
-    businessEstablishmentYearController.dispose();
+    for (var form in businessForms) {
+      form.dispose();
+    }
     super.onClose();
   }
 
@@ -144,6 +173,7 @@ class EditProfileController extends GetxController {
     jobCategories.value = await _masterService.getJobCategories();
     businessTypes.value = await _masterService.getBusinessTypes();
     businessCategories.value = await _masterService.getBusinessCategories();
+    countryDialCodes.value = await _masterService.getCountryDialCodes();
   }
 
   Future<void> loadStates(String countryCode) async {
@@ -171,12 +201,125 @@ class EditProfileController extends GetxController {
     );
   }
 
-  Future<void> loadBusinessSubcategories(int categoryId) async {
-    selectedBusinessCategoryId.value = categoryId;
-    selectedBusinessSubcategoryIds.clear();
-    businessSubcategories.value = await _masterService.getBusinessSubcategories(
-      categoryId,
-    );
+  Future<List<Map<String, dynamic>>> getSubcategoriesForForm(
+    int categoryId,
+  ) async {
+    return await _masterService.getBusinessSubcategories(categoryId);
+  }
+
+  Future<void> pickProfileImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      profileImage.value = File(image.path);
+    }
+  }
+
+  Future<void> pickBusinessLogo(int index) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      if (index < businessForms.length) {
+        businessForms[index].logo.value = File(image.path);
+      }
+    }
+  }
+
+  void addBusinessForm([Map<String, dynamic>? business]) {
+    final form = BusinessFormState();
+
+    if (business != null) {
+      form.id = business['id']; // Store ID for updates/deletions
+      form.nameController.text = business['business_name'] ?? '';
+      form.descriptionController.text =
+          business['description'] ?? business['business_description'] ?? '';
+      form.addressController.text =
+          business['address'] ?? business['business_address'] ?? '';
+
+      // Handle phone with country code
+      String phone = business['business_phone'] ?? '';
+      // Simple logic to extract code if needed, or just set raw for now
+      // Assuming phone might contain code or not.
+      // Ideally backend returns separated, but here we might need to parse.
+      // For now, let's put whole string in controller or split if we know format.
+      // Let's assume standard format +919876543210
+      if (phone.startsWith('+') && phone.length > 3) {
+        // rough extraction
+        // This logic might need refinement based on exact format
+        form.phoneController.text = phone.substring(3); // Remove +91
+        form.phoneCountryCode.value = phone.substring(0, 3);
+      } else {
+        form.phoneController.text = phone;
+      }
+
+      form.emailController.text = business['business_email'] ?? '';
+      form.websiteUrlController.text = business['website_url'] ?? '';
+      form.gstNumberController.text = business['gst_number'] ?? '';
+      form.numberOfEmployeesController.text =
+          business['number_of_employees']?.toString() ?? '';
+      form.annualTurnoverController.text =
+          business['annual_turnover']?.toString() ?? '';
+      form.yearOfEstablishmentController.text =
+          business['year_of_establishment']?.toString() ?? '';
+
+      if (business['logo'] != null) {
+        form.currentLogoUrl.value = business['logo'];
+      }
+
+      if (business['type'] is Map && business['type']['id'] != null) {
+        form.selectedTypeId.value = business['type']['id'];
+      } else if (business['business_type_id'] != null) {
+        form.selectedTypeId.value = business['business_type_id'];
+      }
+
+      if (business['category'] is Map && business['category']['id'] != null) {
+        form.selectedCategoryId.value = business['category']['id'];
+      } else if (business['business_category_id'] != null) {
+        form.selectedCategoryId.value = business['business_category_id'];
+      }
+
+      // Subcategories
+      List<int> subIds = [];
+      if (business['subcategories'] is List) {
+        subIds = (business['subcategories'] as List)
+            .map((s) => s['id'] as int)
+            .toList();
+      } else if (business['business_subcategory_ids'] is List) {
+        subIds = List<int>.from(business['business_subcategory_ids']);
+      }
+      form.selectedSubcategoryIds.addAll(subIds);
+    }
+
+    businessForms.add(form);
+  }
+
+  Future<void> removeBusinessForm(int index) async {
+    final form = businessForms[index];
+    if (form.id != null) {
+      // It's an existing business, delete via API
+      try {
+        isLoading.value = true; // or generic loading
+        final result = await _authService.deleteBusiness(form.id!);
+        if (result['success']) {
+          form.dispose();
+          businessForms.removeAt(index);
+          Get.snackbar('Success', 'Business deleted successfully');
+        } else {
+          Get.snackbar(
+            'Error',
+            result['message'] ?? 'Failed to delete business',
+          );
+        }
+      } catch (e) {
+        Get.snackbar('Error', 'Failed to delete business: $e');
+      } finally {
+        isLoading.value = false;
+      }
+    } else {
+      // Local only
+      form.dispose();
+      businessForms.removeAt(index);
+    }
   }
 
   void loadProfile() {
@@ -306,45 +449,18 @@ class EditProfileController extends GetxController {
       }
 
       // Business Details
-      if (userType.value == 'business' &&
-          (user['business'] != null || user['businesses'] != null)) {
-        final businesses = user['businesses'] ?? [user['business']];
+      if (userType.value == 'business') {
+        businessForms.clear();
+        final businesses =
+            user['businesses'] ??
+            (user['business'] != null ? [user['business']] : []);
         if (businesses is List && businesses.isNotEmpty) {
-          final business = businesses[0];
-          businessNameController.text = business['business_name'] ?? '';
-          businessDescriptionController.text =
-              business['description'] ?? business['business_description'] ?? '';
-          businessAddressController.text =
-              business['address'] ?? business['business_address'] ?? '';
-          businessEmailController.text = business['business_email'] ?? '';
-          businessPhoneController.text = business['business_phone'] ?? '';
-          businessWebsiteController.text = business['website_url'] ?? '';
-          businessGstController.text = business['gst_number'] ?? '';
-          businessEmployeesController.text =
-              business['number_of_employees']?.toString() ?? '';
-          businessTurnoverController.text =
-              business['annual_turnover']?.toString() ?? '';
-          businessEstablishmentYearController.text =
-              business['year_of_establishment']?.toString() ?? '';
-
-          // Load business categories (handle nested structure from backend)
-          if (business['type'] is Map && business['type']['id'] != null) {
-            selectedBusinessTypeId.value = business['type']['id'];
+          for (var b in businesses) {
+            addBusinessForm(b);
           }
-
-          if (business['category'] is Map &&
-              business['category']['id'] != null) {
-            selectedBusinessCategoryId.value = business['category']['id'];
-            loadBusinessSubcategories(business['category']['id']).then((_) {
-              // Load subcategories from array
-              if (business['subcategories'] is List) {
-                selectedBusinessSubcategoryIds.value =
-                    (business['subcategories'] as List)
-                        .map((sub) => sub['id'] as int)
-                        .toList();
-              }
-            });
-          }
+        } else {
+          // Add one empty form if none exist
+          addBusinessForm();
         }
       }
     }
@@ -396,7 +512,7 @@ class EditProfileController extends GetxController {
   Future<bool> saveProfile() async {
     isSaving.value = true;
     try {
-      final data = {
+      final Map<String, dynamic> data = {
         // Basic Info
         'full_name': fullNameController.text.trim(),
         'surname': surnameController.text.trim(),
@@ -422,7 +538,7 @@ class EditProfileController extends GetxController {
         'education': educationList.toList(),
       };
 
-      // Job Data
+      // Job Details
       if (userType.value == 'job') {
         data['job'] = {
           'company_name': jobCompanyController.text.trim(),
@@ -446,38 +562,109 @@ class EditProfileController extends GetxController {
 
       // Business Data
       if (userType.value == 'business') {
-        data['business'] = {
-          'business_name': businessNameController.text.trim(),
-          'description': businessDescriptionController.text.trim(),
-          'address': businessAddressController.text.trim(),
-          'business_email': businessEmailController.text.trim(),
-          'business_phone': businessPhoneController.text.trim(),
-          'website_url': businessWebsiteController.text.trim(),
-          'gst_number': businessGstController.text.trim(),
-          'number_of_employees': businessEmployeesController.text.trim(),
-          'annual_turnover': businessTurnoverController.text.trim(),
-          'year_of_establishment': businessEstablishmentYearController.text
-              .trim(),
-          'business_type_id': selectedBusinessTypeId.value > 0
-              ? selectedBusinessTypeId.value
-              : null,
-          'business_category_id': selectedBusinessCategoryId.value > 0
-              ? selectedBusinessCategoryId.value
-              : null,
-          'business_subcategory_ids': selectedBusinessSubcategoryIds.isNotEmpty
-              ? selectedBusinessSubcategoryIds.toList()
-              : null,
+        data['businesses'] = businessForms
+            .map(
+              (form) => {
+                if (form.id != null) 'id': form.id,
+                'business_name': form.nameController.text.trim(),
+                'business_description': form.descriptionController.text.trim(),
+                'business_address': form.addressController.text.trim(),
+                'business_email': form.emailController.text.trim(),
+                'business_phone':
+                    '${form.phoneCountryCode.value}${form.phoneController.text.trim()}',
+                'website_url': form.websiteUrlController.text.trim(),
+                'gst_number': form.gstNumberController.text.trim(),
+                'number_of_employees': int.tryParse(
+                  form.numberOfEmployeesController.text.trim(),
+                ),
+                'annual_turnover': double.tryParse(
+                  form.annualTurnoverController.text.trim(),
+                ),
+                'year_of_establishment': int.tryParse(
+                  form.yearOfEstablishmentController.text.trim(),
+                ),
+                'business_type_id': form.selectedTypeId.value,
+                'business_category_id': form.selectedCategoryId.value,
+                'business_subcategory_ids': form.selectedSubcategoryIds
+                    .toList(),
+              },
+            )
+            .toList();
+      }
+
+      // Check for files to upload
+      List<File> businessLogos = [];
+      List<int> businessLogoIndices = [];
+      for (int i = 0; i < businessForms.length; i++) {
+        if (businessForms[i].logo.value != null) {
+          businessLogos.add(businessForms[i].logo.value!);
+          businessLogoIndices.add(i);
+        }
+      }
+
+      if (profileImage.value != null || businessLogos.isNotEmpty) {
+        final Map<String, dynamic> formMap = {
+          ...data,
+          if (data.containsKey('businesses'))
+            'businesses': jsonEncode(data['businesses']),
+          if (data.containsKey('education'))
+            'education': jsonEncode(data['education']),
+          if (data.containsKey('job')) 'job': jsonEncode(data['job']),
+          if (businessLogos.isNotEmpty)
+            'business_logo_indices': jsonEncode(businessLogoIndices),
         };
-      }
 
-      final response = await _api.put(ApiConstants.profile, data: data);
+        final formData = FormData.fromMap(formMap);
 
-      if (response.statusCode == 200) {
-        // Update local user data
-        await _authService.getProfile();
-        return true;
+        if (profileImage.value != null) {
+          formData.files.add(
+            MapEntry(
+              'profile_picture',
+              await MultipartFile.fromFile(
+                profileImage.value!.path,
+                filename: profileImage.value!.path.split('/').last,
+              ),
+            ),
+          );
+        }
+
+        if (businessLogos.isNotEmpty) {
+          for (var file in businessLogos) {
+            formData.files.add(
+              MapEntry(
+                'business_logo',
+                await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                ),
+              ),
+            );
+          }
+        }
+
+        // AuthService updateProfile needs to handle FormData?
+        // _authService.updateProfileWithFile? Or check if updateProfile can handle it.
+        // Since we haven't implemented updateProfileWithFile in AuthService, detailed check:
+        // _api.putFormData(ApiConstants.profile, formData) calls PUT /profile with multipart.
+        // The backend supports this.
+        // So we just need to ensure we call the API correctly.
+
+        final response = await _api.putFormData(ApiConstants.profile, formData);
+
+        if (response.statusCode == 200) {
+          await _authService.getProfile();
+          return true;
+        }
+        return false;
+      } else {
+        // JSON Update
+        final response = await _api.put(ApiConstants.profile, data: data);
+        if (response.statusCode == 200) {
+          await _authService.getProfile();
+          return true;
+        }
+        return false;
       }
-      return false;
     } catch (e) {
       debugPrint('Error saving profile: $e');
       return false;

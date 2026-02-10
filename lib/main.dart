@@ -11,8 +11,16 @@ import 'app/bindings/initial_binding.dart';
 import 'app/data/services/notification_service.dart';
 import 'firebase_options.dart';
 
+import 'package:flutter/services.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Set preferred orientation to portrait only
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // Initialize GetStorage
   await GetStorage.init();

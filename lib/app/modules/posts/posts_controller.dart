@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/providers/api_provider.dart';
 
@@ -198,9 +199,17 @@ class PostsController extends GetxController
         'success': false,
         'message': response.data['message'] ?? 'Failed to create post',
       };
+    } on DioException catch (e) {
+      debugPrint('Error creating post: $e');
+      // Extract error message from response if available
+      String errorMessage = 'Failed to create post';
+      if (e.response?.data != null && e.response?.data['message'] != null) {
+        errorMessage = e.response!.data['message'];
+      }
+      return {'success': false, 'message': errorMessage};
     } catch (e) {
       debugPrint('Error creating post: $e');
-      return {'success': false, 'message': 'Failed to create post: $e'};
+      return {'success': false, 'message': 'Failed to create post'};
     }
   }
 
@@ -233,6 +242,14 @@ class PostsController extends GetxController
       } else {
         return createPost(data);
       }
+    } on DioException catch (e) {
+      debugPrint('Error creating post with image: $e');
+      // Extract error message from response if available
+      String errorMessage = 'Failed to create post';
+      if (e.response?.data != null && e.response?.data['message'] != null) {
+        errorMessage = e.response!.data['message'];
+      }
+      return {'success': false, 'message': errorMessage};
     } catch (e) {
       debugPrint('Error creating post with image: $e');
       return {'success': false, 'message': 'Failed to create post: $e'};

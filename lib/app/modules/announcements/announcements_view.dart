@@ -12,41 +12,47 @@ class AnnouncementsView extends GetView<AnnouncementsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Announcements')),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
+      body: SafeArea(
+        child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (controller.announcements.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.campaign_outlined, size: 60.sp, color: Colors.grey),
-                SizedBox(height: 2.h),
-                Text(
-                  'No announcements yet',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
+          if (controller.announcements.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.campaign_outlined,
+                    size: 60.sp,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    'No announcements yet',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => controller.loadAnnouncements(),
+            child: ListView.builder(
+              padding: EdgeInsets.all(4.w),
+              itemCount: controller.announcements.length,
+              itemBuilder: (context, index) {
+                return _buildAnnouncementCard(
+                  context,
+                  controller.announcements[index],
+                );
+              },
             ),
           );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () => controller.loadAnnouncements(),
-          child: ListView.builder(
-            padding: EdgeInsets.all(4.w),
-            itemCount: controller.announcements.length,
-            itemBuilder: (context, index) {
-              return _buildAnnouncementCard(
-                context,
-                controller.announcements[index],
-              );
-            },
-          ),
-        );
-      }),
+        }),
+      ),
     );
   }
 

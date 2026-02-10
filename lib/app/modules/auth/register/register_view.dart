@@ -20,29 +20,31 @@ class RegisterView extends GetView<RegisterController> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Column(
-        children: [
-          // Progress indicator
-          Obx(() => _buildProgressIndicator()),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Progress indicator
+            Obx(() => _buildProgressIndicator()),
 
-          // Form pages
-          Expanded(
-            child: PageView(
-              controller: controller.pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStep1PersonalInfo(context),
-                _buildStep2AddressInfo(context),
-                _buildStep3UserType(context),
-                _buildStep4Education(context),
-                _buildStep5Details(context),
-              ],
+            // Form pages
+            Expanded(
+              child: PageView(
+                controller: controller.pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildStep1PersonalInfo(context),
+                  _buildStep2AddressInfo(context),
+                  _buildStep3UserType(context),
+                  _buildStep4Education(context),
+                  _buildStep5Details(context),
+                ],
+              ),
             ),
-          ),
 
-          // Navigation buttons
-          _buildNavigationButtons(context),
-        ],
+            // Navigation buttons
+            _buildNavigationButtons(context),
+          ],
+        ),
       ),
     );
   }
@@ -116,6 +118,61 @@ class RegisterView extends GetView<RegisterController> {
             Text(
               'Fill in your basic details',
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            SizedBox(height: 3.h),
+
+            // Profile Picture Picker
+            Center(
+              child: Stack(
+                children: [
+                  Obx(
+                    () => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: controller.profileImage.value != null
+                          ? FileImage(controller.profileImage.value!)
+                          : null,
+                      child: controller.profileImage.value == null
+                          ? Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.grey[400],
+                            )
+                          : null,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: InkWell(
+                      onTap: () => controller.showImagePickerOptions(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 1.h),
+            Center(
+              child: Text(
+                'Upload Profile Picture *',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 14.sp,
+                ),
+              ),
             ),
             SizedBox(height: 3.h),
 
@@ -969,338 +1026,420 @@ class RegisterView extends GetView<RegisterController> {
   }
 
   Widget _buildBusinessSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Business Details', Icons.business),
-        SizedBox(height: 1.5.h),
-
-        // Business Logo Upload
-        Center(
-          child: Column(
+    return Obx(
+      () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Obx(
-                () => GestureDetector(
-                  onTap: controller.pickBusinessLogo,
-                  child: Container(
-                    width: 25.w,
-                    height: 25.w,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
-                        width: 1,
-                      ),
-                      image: controller.businessLogo.value != null
-                          ? DecorationImage(
-                              image: FileImage(controller.businessLogo.value!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: controller.businessLogo.value == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.add_photo_alternate_outlined,
-                                size: 24.sp,
-                                color: AppTheme.primaryColor,
-                              ),
-                              SizedBox(height: 0.5.h),
-                              Text(
-                                'Logo',
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            ],
-                          )
-                        : null,
-                  ),
+              _buildSectionHeader(context, 'Business Details', Icons.business),
+              if (controller.businessForms.length < 5) // Limit to 5 businesses
+                TextButton.icon(
+                  onPressed: controller.addBusinessForm,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Business'),
                 ),
-              ),
-              SizedBox(height: 1.h),
-              Text(
-                'Upload Business Logo (Optional)',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-              ),
             ],
           ),
-        ),
-        SizedBox(height: 3.h),
+          SizedBox(height: 1.5.h),
 
-        TextFormField(
-          controller: controller.businessNameController,
-          decoration: const InputDecoration(
-            labelText: 'Business Name *',
-            prefixIcon: Icon(Icons.store),
-          ),
-          textCapitalization: TextCapitalization.words,
-        ),
-        SizedBox(height: 1.5.h),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: controller.businessForms.length,
+            separatorBuilder: (context, index) => Column(
+              children: [
+                SizedBox(height: 2.h),
+                Divider(thickness: 1, color: Colors.grey[300]),
+                SizedBox(height: 2.h),
+              ],
+            ),
+            itemBuilder: (context, index) {
+              final form = controller.businessForms[index];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (controller.businessForms.length > 1)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Business ${index + 1}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => controller.removeBusinessForm(index),
+                        ),
+                      ],
+                    ),
 
-        // Year of Establishment
-        TextFormField(
-          controller: controller.yearOfEstablishmentController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Year of Establishment',
-            prefixIcon: Icon(Icons.calendar_today),
-            hintText: 'e.g. 2015',
-          ),
-        ),
-        SizedBox(height: 1.5.h),
-
-        TextFormField(
-          controller: controller.businessEmailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Business Email',
-            prefixIcon: Icon(Icons.email),
-            hintText: 'Leave empty if same as personal',
-          ),
-          validator: (v) {
-            if (v != null && v.isNotEmpty && !GetUtils.isEmail(v)) {
-              return 'Invalid email format';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 1.5.h),
-
-        // Business Phone with country code dropdown
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 28.w,
-              child: Obx(
-                () => DropdownButtonFormField<String>(
-                  value: controller.businessPhoneCountryCode.value,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 16,
+                  // Business Logo Upload
+                  Center(
+                    child: Column(
+                      children: [
+                        Obx(
+                          () => GestureDetector(
+                            onTap: () => controller.pickBusinessLogo(index),
+                            child: Container(
+                              width: 25.w,
+                              height: 25.w,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                                image: form.logo.value != null
+                                    ? DecorationImage(
+                                        image: FileImage(form.logo.value!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: form.logo.value == null
+                                  ? Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.add_photo_alternate_outlined,
+                                          size: 24.sp,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                        SizedBox(height: 0.5.h),
+                                        Text(
+                                          'Logo',
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 1.h),
+                        Text(
+                          'Upload Business Logo (Optional)',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
                   ),
-                  isExpanded: true,
-                  items: controller.countryDialCodes.map((c) {
-                    return DropdownMenuItem<String>(
-                      value: c['code'],
-                      child: Text(
-                        '${c['code']}',
-                        style: const TextStyle(fontSize: 14),
+                  SizedBox(height: 3.h),
+
+                  TextFormField(
+                    controller: form.nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Name *',
+                      prefixIcon: Icon(Icons.store),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    validator: (v) =>
+                        v!.isEmpty ? 'Business name is required' : null,
+                  ),
+                  SizedBox(height: 1.5.h),
+
+                  // Year of Establishment
+                  TextFormField(
+                    controller: form.yearOfEstablishmentController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Year of Establishment',
+                      prefixIcon: Icon(Icons.calendar_today),
+                      hintText: 'e.g. 2015',
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
+
+                  TextFormField(
+                    controller: form.emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Email',
+                      prefixIcon: Icon(Icons.email),
+                      hintText: 'Leave empty if same as personal',
+                    ),
+                    validator: (v) {
+                      if (v != null && v.isNotEmpty && !GetUtils.isEmail(v)) {
+                        return 'Invalid email format';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 1.5.h),
+
+                  // Business Phone with country code dropdown
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 28.w,
+                        child: Obx(
+                          () => DropdownButtonFormField<String>(
+                            value: form.phoneCountryCode.value,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 16,
+                              ),
+                            ),
+                            isExpanded: true,
+                            items: controller.countryDialCodes.map((c) {
+                              return DropdownMenuItem<String>(
+                                value: c['code'],
+                                child: Text(
+                                  '${c['code']}',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (v) =>
+                                form.phoneCountryCode.value = v ?? '+91',
+                          ),
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (v) =>
-                      controller.businessPhoneCountryCode.value = v ?? '+91',
-                ),
-              ),
-            ),
-            SizedBox(width: 2.w),
-            Expanded(
-              child: TextFormField(
-                controller: controller.businessPhoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Business Phone',
-                  hintText: 'Leave empty if same as personal',
-                ),
-                validator: (v) {
-                  if (v != null &&
-                      v.isNotEmpty &&
-                      !RegExp(r'^[0-9]{10}$').hasMatch(v)) {
-                    return 'Enter valid 10 digit number';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 1.5.h),
+                      SizedBox(width: 2.w),
+                      Expanded(
+                        child: TextFormField(
+                          controller: form.phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Business Phone',
+                            hintText: 'Leave empty if same as personal',
+                          ),
+                          validator: (v) {
+                            if (v != null &&
+                                v.isNotEmpty &&
+                                !RegExp(r'^[0-9]{10}$').hasMatch(v)) {
+                              return 'Enter valid 10 digit number';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        // GST Number
-        TextFormField(
-          controller: controller.gstNumberController,
-          textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(
-            labelText: 'GST Number',
-            prefixIcon: Icon(Icons.numbers),
-            hintText: 'Optional',
-          ),
-        ),
-        SizedBox(height: 1.5.h),
+                  // GST Number
+                  TextFormField(
+                    controller: form.gstNumberController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'GST Number',
+                      prefixIcon: Icon(Icons.numbers),
+                      hintText: 'Optional',
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        // Website URL
-        TextFormField(
-          controller: controller.websiteUrlController,
-          keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
-            labelText: 'Website URL',
-            prefixIcon: Icon(Icons.language),
-            hintText: 'e.g. www.example.com',
-          ),
-        ),
-        SizedBox(height: 1.5.h),
+                  // Website URL
+                  TextFormField(
+                    controller: form.websiteUrlController,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'Website URL',
+                      prefixIcon: Icon(Icons.language),
+                      hintText: 'e.g. www.example.com',
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        // Number of Employees
-        TextFormField(
-          controller: controller.numberOfEmployeesController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Number of Employees',
-            prefixIcon: Icon(Icons.people),
-            hintText: 'e.g. 10',
-          ),
-        ),
-        SizedBox(height: 1.5.h),
+                  // Number of Employees
+                  TextFormField(
+                    controller: form.numberOfEmployeesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Number of Employees',
+                      prefixIcon: Icon(Icons.people),
+                      hintText: 'e.g. 10',
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        // Annual Turnover
-        TextFormField(
-          controller: controller.annualTurnoverController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'Annual Turnover',
-            prefixIcon: Icon(Icons.currency_rupee),
-            hintText: 'e.g. 5000000',
-          ),
-        ),
-        SizedBox(height: 1.5.h),
+                  // Annual Turnover
+                  TextFormField(
+                    controller: form.annualTurnoverController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Annual Turnover',
+                      prefixIcon: Icon(Icons.currency_rupee),
+                      hintText: 'e.g. 5000000',
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        // Business Type - Searchable Dropdown
-        Obx(
-          () => DropdownSearch<Map<String, dynamic>>(
-            items: (filter, _) => controller.businessTypes.toList(),
-            selectedItem: controller.businessTypes.firstWhereOrNull(
-              (t) => t['id'] == controller.selectedBusinessTypeId.value,
-            ),
-            itemAsString: (item) => item['type_name'] ?? '',
-            compareFn: (a, b) => a['id'] == b['id'],
-            decoratorProps: const DropDownDecoratorProps(
-              decoration: InputDecoration(
-                labelText: 'Business Type *',
-                prefixIcon: Icon(Icons.category),
-              ),
-            ),
-            popupProps: PopupProps.menu(
-              showSearchBox: true,
-              searchFieldProps: const TextFieldProps(
-                decoration: InputDecoration(
-                  hintText: 'Search type...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            onChanged: (item) {
-              controller.selectedBusinessTypeId.value = item?['id'];
-            },
-          ),
-        ),
-        SizedBox(height: 1.5.h),
-
-        // Business Category - Searchable Dropdown
-        Obx(
-          () => DropdownSearch<Map<String, dynamic>>(
-            items: (filter, _) => controller.businessCategories.toList(),
-            selectedItem: controller.businessCategories.firstWhereOrNull(
-              (c) => c['id'] == controller.selectedBusinessCategoryId.value,
-            ),
-            itemAsString: (item) => item['category_name'] ?? '',
-            compareFn: (a, b) => a['id'] == b['id'],
-            decoratorProps: const DropDownDecoratorProps(
-              decoration: InputDecoration(
-                labelText: 'Business Category *',
-                prefixIcon: Icon(Icons.label),
-              ),
-            ),
-            popupProps: PopupProps.menu(
-              showSearchBox: true,
-              searchFieldProps: const TextFieldProps(
-                decoration: InputDecoration(
-                  hintText: 'Search category...',
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-            ),
-            onChanged: (item) {
-              if (item != null)
-                controller.loadBusinessSubcategories(item['id']);
-            },
-          ),
-        ),
-        SizedBox(height: 1.5.h),
-
-        // Business Subcategories - Multi-Select Dropdown
-        Obx(
-          () => controller.businessSubcategories.isNotEmpty
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownSearch<Map<String, dynamic>>.multiSelection(
-                      items: (filter, _) =>
-                          controller.businessSubcategories.toList(),
-                      selectedItems: controller.businessSubcategories
-                          .where(
-                            (sub) => controller.selectedBusinessSubcategoryIds
-                                .contains(sub['id']),
-                          )
-                          .toList(),
-                      itemAsString: (item) => item['subcategory_name'] ?? '',
+                  // Business Type - Searchable Dropdown
+                  Obx(
+                    () => DropdownSearch<Map<String, dynamic>>(
+                      items: (filter, _) => controller.businessTypes.toList(),
+                      selectedItem: controller.businessTypes.firstWhereOrNull(
+                        (t) => t['id'] == form.selectedTypeId.value,
+                      ),
+                      itemAsString: (item) => item['type_name'] ?? '',
                       compareFn: (a, b) => a['id'] == b['id'],
                       decoratorProps: const DropDownDecoratorProps(
                         decoration: InputDecoration(
-                          labelText: 'Business Subcategories *',
-                          prefixIcon: Icon(Icons.category_outlined),
-                          hintText: 'Select multiple subcategories',
+                          labelText: 'Business Type *',
+                          prefixIcon: Icon(Icons.category),
                         ),
                       ),
-                      popupProps: PopupPropsMultiSelection.menu(
+                      popupProps: PopupProps.menu(
                         showSearchBox: true,
                         searchFieldProps: const TextFieldProps(
                           decoration: InputDecoration(
-                            hintText: 'Search subcategories...',
+                            hintText: 'Search type...',
                             prefixIcon: Icon(Icons.search),
                           ),
                         ),
                       ),
-                      onChanged: (items) {
-                        controller.selectedBusinessSubcategoryIds.value = items
-                            .map((item) => item['id'] as int)
-                            .toList();
+                      onChanged: (item) {
+                        form.selectedTypeId.value = item?['id'];
                       },
+                      validator: (v) =>
+                          v == null ? 'Business type is required' : null,
                     ),
-                    SizedBox(height: 1.5.h),
-                  ],
-                )
-              : const SizedBox.shrink(),
-        ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        TextFormField(
-          controller: controller.businessAddressController,
-          decoration: const InputDecoration(
-            labelText: 'Business Address',
-            prefixIcon: Icon(Icons.location_on),
-          ),
-          maxLines: 2,
-        ),
-        SizedBox(height: 1.5.h),
+                  // Business Category - Searchable Dropdown
+                  Obx(
+                    () => DropdownSearch<Map<String, dynamic>>(
+                      items: (filter, _) =>
+                          controller.businessCategories.toList(),
+                      selectedItem: controller.businessCategories
+                          .firstWhereOrNull(
+                            (c) => c['id'] == form.selectedCategoryId.value,
+                          ),
+                      itemAsString: (item) => item['category_name'] ?? '',
+                      compareFn: (a, b) => a['id'] == b['id'],
+                      decoratorProps: const DropDownDecoratorProps(
+                        decoration: InputDecoration(
+                          labelText: 'Business Category *',
+                          prefixIcon: Icon(Icons.label),
+                        ),
+                      ),
+                      popupProps: PopupProps.menu(
+                        showSearchBox: true,
+                        searchFieldProps: const TextFieldProps(
+                          decoration: InputDecoration(
+                            hintText: 'Search category...',
+                            prefixIcon: Icon(Icons.search),
+                          ),
+                        ),
+                      ),
+                      onChanged: (item) async {
+                        if (item != null) {
+                          form.selectedCategoryId.value = item['id'];
+                          // We need a specific list for this form, but we are using DropdownSearch.multiSelection below.
+                          // The view needs a list of subcategories.
+                          // But we replaced `loadBusinessSubcategories` in controller which was updating a SINGLE list.
+                          // We need `form.subcategories` list.
+                          // I will add `subcategories` to BusinessFormState via the onInit or just use FutureBuilder here?
+                          // Better: Add `RxList<Map<String, dynamic>> subcategories` to BusinessFormState.
+                        }
+                      },
+                      validator: (v) =>
+                          v == null ? 'Business category is required' : null,
+                    ),
+                  ),
+                  SizedBox(height: 1.5.h),
 
-        TextFormField(
-          controller: controller.businessDescriptionController,
-          decoration: const InputDecoration(
-            labelText: 'Business Description',
-            hintText: 'Brief description of your business',
+                  // Business Subcategories - Using FutureBuilder to fetch for this specific category
+                  Obx(() {
+                    if (form.selectedCategoryId.value == null)
+                      return const SizedBox.shrink();
+
+                    return FutureBuilder<List<Map<String, dynamic>>>(
+                      future: controller.getSubcategoriesForForm(
+                        form.selectedCategoryId.value!,
+                      ),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData)
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        final subcategories = snapshot.data!;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownSearch<Map<String, dynamic>>.multiSelection(
+                              items: (filter, _) => subcategories,
+                              selectedItems: subcategories
+                                  .where(
+                                    (sub) => form.selectedSubcategoryIds
+                                        .contains(sub['id']),
+                                  )
+                                  .toList(),
+                              itemAsString: (item) =>
+                                  item['subcategory_name'] ?? '',
+                              compareFn: (a, b) => a['id'] == b['id'],
+                              decoratorProps: const DropDownDecoratorProps(
+                                decoration: InputDecoration(
+                                  labelText: 'Business Subcategories *',
+                                  prefixIcon: Icon(Icons.category_outlined),
+                                  hintText: 'Select multiple subcategories',
+                                ),
+                              ),
+                              popupProps: PopupPropsMultiSelection.menu(
+                                showSearchBox: true,
+                                searchFieldProps: const TextFieldProps(
+                                  decoration: InputDecoration(
+                                    hintText: 'Search subcategories...',
+                                    prefixIcon: Icon(Icons.search),
+                                  ),
+                                ),
+                              ),
+                              onChanged: (items) {
+                                form.selectedSubcategoryIds.value = items
+                                    .map((item) => item['id'] as int)
+                                    .toList();
+                              },
+                            ),
+                            SizedBox(height: 1.5.h),
+                          ],
+                        );
+                      },
+                    );
+                  }),
+
+                  TextFormField(
+                    controller: form.addressController,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Address *',
+                      prefixIcon: Icon(Icons.location_on),
+                    ),
+                    maxLines: 2,
+                    validator: (v) =>
+                        v!.isEmpty ? 'Business address is required' : null,
+                  ),
+                  SizedBox(height: 1.5.h),
+
+                  TextFormField(
+                    controller: form.descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Business Description',
+                      hintText: 'Brief description of your business',
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
+              );
+            },
           ),
-          maxLines: 3,
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1335,6 +1474,8 @@ class RegisterView extends GetView<RegisterController> {
                         prefixIcon: Icon(Icons.business),
                       ),
                       textCapitalization: TextCapitalization.words,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Company name is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -1345,6 +1486,8 @@ class RegisterView extends GetView<RegisterController> {
                         prefixIcon: Icon(Icons.badge),
                       ),
                       textCapitalization: TextCapitalization.words,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Designation is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -1430,6 +1573,8 @@ class RegisterView extends GetView<RegisterController> {
                       onChanged: (item) {
                         controller.selectedJobTypeId.value = item?['id'];
                       },
+                      validator: (v) =>
+                          v == null ? 'Job type is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -1461,6 +1606,8 @@ class RegisterView extends GetView<RegisterController> {
                         if (item != null)
                           controller.loadJobSubcategories(item['id']);
                       },
+                      validator: (v) =>
+                          v == null ? 'Job category is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 

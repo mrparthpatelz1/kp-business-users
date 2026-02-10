@@ -11,6 +11,8 @@ import '../modules/main/main_binding.dart';
 import '../modules/pending_approval/pending_approval_view.dart';
 import '../modules/profile/edit_profile_view.dart';
 import '../modules/profile/full_profile_view.dart';
+import '../modules/profile/other_user_profile_view.dart';
+import '../modules/profile/other_user_profile_controller.dart';
 import '../modules/posts/create_post_view.dart';
 import '../modules/chat/chat_list_view.dart';
 import '../modules/chat/chat_detail_view.dart';
@@ -29,7 +31,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.LOGIN,
-      page: () => const LoginView(),
+      page: () => LoginView(),
       binding: LoginBinding(),
     ),
     GetPage(
@@ -48,6 +50,13 @@ class AppPages {
     ),
     GetPage(name: Routes.EDIT_PROFILE, page: () => const EditProfileView()),
     GetPage(name: Routes.FULL_PROFILE, page: () => const FullProfileView()),
+    GetPage(
+      name: Routes.OTHER_USER_PROFILE,
+      page: () => const OtherUserProfileView(),
+      binding: BindingsBuilder(() {
+        Get.put(OtherUserProfileController());
+      }),
+    ),
     GetPage(name: Routes.CREATE_POST, page: () => const CreatePostView()),
     GetPage(name: Routes.CHAT_LIST, page: () => const ChatListView()),
     GetPage(name: Routes.CHAT_DETAIL, page: () => const ChatDetailView()),

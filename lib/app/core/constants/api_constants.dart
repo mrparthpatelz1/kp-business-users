@@ -1,7 +1,10 @@
 class ApiConstants {
-  // Use localhost for Chrome/web, use your machine IP for mobi  // static const String baseUrl = 'http://localhost:3000/api/v1'; // For Chrome
-  // static const String baseUrl = 'https://api.48kadavapatidarparivar.cloud/api/v1'; // Production URL
-  static const String baseUrl = 'https://staging.48kadavapatidarparivar.cloud/api/v1'; // Staging URL
+  // static const String baseUrl = 'http://localhost:3000/api/v1'; // For Chrome
+  static const String baseUrl = 'https://api.48kadavapatidarparivar.cloud/api/v1'; // Production URL
+  // static const String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Local URL for emulator
+  // static const String baseUrl =
+  //     'http://192.168.1.43:3000/api/v1'; // Local URL for real device
+  // static const String baseUrl = 'https://staging.48kadavapatidarparivar.cloud/api/v1'; // Staging URL
 
   static String get assetBaseUrl => baseUrl.replaceAll('/api/v1', '');
 
@@ -53,6 +56,7 @@ class ApiConstants {
   // User settings endpoints
   static const String updateFcmToken = '/fcm-token';
   static const String userProfile = '/profile';
+  static const String userPosts = '/posts/user';
 }
 
 class StorageKeys {

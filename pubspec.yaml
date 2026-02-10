@@ -31,6 +31,9 @@ dependencies:
   # Image Picker
   image_picker: ^1.2.1
   
+  # File Picker (for chat attachments)
+  file_picker: ^10.3.10
+  
   # Date Formatting
   intl: ^0.20.2
   
@@ -54,11 +57,19 @@ dependencies:
   share_plus: ^10.1.4
   app_links: ^6.3.1
   
+  # File Operations
+  path_provider: ^2.1.2
+  permission_handler: ^11.3.0
+  open_file: ^3.3.2
+  
   # Connectivity
   connectivity_plus: ^6.1.2
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1

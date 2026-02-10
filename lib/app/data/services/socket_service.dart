@@ -62,12 +62,18 @@ class SocketService extends GetxService {
     }
   }
 
-  void sendMessage(String conversationId, String content, int? receiverId) {
+  void sendMessage(
+    String conversationId,
+    String content,
+    int? receiverId,
+    String uuid,
+  ) {
     if (isConnected.value) {
       socket.emit('send_message', {
         'conversationId': conversationId,
         'content': content,
         'receiverId': receiverId,
+        'uuid': uuid,
       });
     }
   }

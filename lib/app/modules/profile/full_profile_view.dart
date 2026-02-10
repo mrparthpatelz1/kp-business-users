@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:intl/intl.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 
 class FullProfileView extends StatelessWidget {
@@ -193,6 +194,16 @@ class FullProfileView extends StatelessWidget {
     final List<Widget> widgets = [];
     for (var business in businessList) {
       widgets.addAll([
+        if (business['logo'] != null)
+          Center(
+            child: CircleAvatar(
+              radius: 40,
+              backgroundImage: NetworkImage(
+                ApiConstants.getFullUrl(business['logo']),
+              ),
+            ),
+          ),
+        SizedBox(height: 1.h),
         _buildInfoRow('Business Name', business['business_name'] ?? 'N/A'),
         _buildInfoRow(
           'Type',
