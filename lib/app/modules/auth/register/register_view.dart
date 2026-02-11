@@ -20,31 +20,29 @@ class RegisterView extends GetView<RegisterController> {
           onPressed: () => Get.back(),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Progress indicator
-            Obx(() => _buildProgressIndicator()),
+      body: Column(
+        children: [
+          // Progress indicator
+          Obx(() => _buildProgressIndicator()),
 
-            // Form pages
-            Expanded(
-              child: PageView(
-                controller: controller.pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildStep1PersonalInfo(context),
-                  _buildStep2AddressInfo(context),
-                  _buildStep3UserType(context),
-                  _buildStep4Education(context),
-                  _buildStep5Details(context),
-                ],
-              ),
+          // Form pages
+          Expanded(
+            child: PageView(
+              controller: controller.pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildStep1PersonalInfo(context),
+                _buildStep2AddressInfo(context),
+                _buildStep3UserType(context),
+                _buildStep4Education(context),
+                _buildStep5Details(context),
+              ],
             ),
+          ),
 
-            // Navigation buttons
-            _buildNavigationButtons(context),
-          ],
-        ),
+          // Navigation buttons
+          _buildNavigationButtons(context),
+        ],
       ),
     );
   }
@@ -963,6 +961,10 @@ class RegisterView extends GetView<RegisterController> {
                           Expanded(
                             child: TextFormField(
                               controller: controller.gradeController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               decoration: const InputDecoration(
                                 labelText: 'Grade / %',
                                 hintText: '85%',
@@ -1392,15 +1394,20 @@ class RegisterView extends GetView<RegisterController> {
                                   hintText: 'Select multiple subcategories',
                                 ),
                               ),
-                              popupProps: PopupPropsMultiSelection.menu(
-                                showSearchBox: true,
-                                searchFieldProps: const TextFieldProps(
-                                  decoration: InputDecoration(
-                                    hintText: 'Search subcategories...',
-                                    prefixIcon: Icon(Icons.search),
+                              popupProps:
+                                  PopupPropsMultiSelection.modalBottomSheet(
+                                    showSearchBox: true,
+                                    searchFieldProps: const TextFieldProps(
+                                      decoration: InputDecoration(
+                                        hintText: 'Search subcategories...',
+                                        prefixIcon: Icon(Icons.search),
+                                      ),
+                                    ),
+                                    modalBottomSheetProps:
+                                        const ModalBottomSheetProps(
+                                          useSafeArea: true,
+                                        ),
                                   ),
-                                ),
-                              ),
                               onChanged: (items) {
                                 form.selectedSubcategoryIds.value = items
                                     .map((item) => item['id'] as int)
@@ -1639,15 +1646,20 @@ class RegisterView extends GetView<RegisterController> {
                                       hintText: 'Select multiple subcategories',
                                     ),
                                   ),
-                                  popupProps: PopupPropsMultiSelection.menu(
-                                    showSearchBox: true,
-                                    searchFieldProps: const TextFieldProps(
-                                      decoration: InputDecoration(
-                                        hintText: 'Search subcategories...',
-                                        prefixIcon: Icon(Icons.search),
+                                  popupProps:
+                                      PopupPropsMultiSelection.modalBottomSheet(
+                                        showSearchBox: true,
+                                        searchFieldProps: const TextFieldProps(
+                                          decoration: InputDecoration(
+                                            hintText: 'Search subcategories...',
+                                            prefixIcon: Icon(Icons.search),
+                                          ),
+                                        ),
+                                        modalBottomSheetProps:
+                                            const ModalBottomSheetProps(
+                                              useSafeArea: true,
+                                            ),
                                       ),
-                                    ),
-                                  ),
                                   onChanged: (items) {
                                     controller.selectedJobSubcategoryIds.value =
                                         items

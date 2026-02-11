@@ -207,27 +207,29 @@ class RegisterController extends GetxController {
 
   void showImagePickerOptions() {
     Get.bottomSheet(
-      Container(
-        color: Colors.white,
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Camera'),
-              onTap: () {
-                Get.back();
-                pickProfileImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Gallery'),
-              onTap: () {
-                Get.back();
-                pickProfileImage(ImageSource.gallery);
-              },
-            ),
-          ],
+      SafeArea(
+        child: Container(
+          color: Colors.white,
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () {
+                  Get.back();
+                  pickProfileImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () {
+                  Get.back();
+                  pickProfileImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
