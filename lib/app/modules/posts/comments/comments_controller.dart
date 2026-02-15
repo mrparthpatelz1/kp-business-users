@@ -51,10 +51,10 @@ class CommentsController extends GetxController {
         data: {'content': content},
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200) {
         final newComment = response.data['data'];
         // Prepend comment to list
-        comments.insert(0, newComment);
+        comments.add(newComment);
         commentController.clear();
 
         // Don't reload - it causes the comment to disappear

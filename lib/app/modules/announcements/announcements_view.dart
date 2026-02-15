@@ -139,58 +139,60 @@ class AnnouncementsView extends GetView<AnnouncementsController> {
     Map<String, dynamic> announcement,
   ) {
     Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.all(4.w),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      announcement['title'] ?? '',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.all(4.w),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        announcement['title'] ?? '',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 1.h),
+                Text(
+                  _formatDate(announcement['created_at']),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+                if (announcement['image_url'] != null) ...[
+                  SizedBox(height: 2.h),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      ApiConstants.getFullUrl(announcement['image_url']),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ],
-              ),
-              SizedBox(height: 1.h),
-              Text(
-                _formatDate(announcement['created_at']),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-              ),
-              if (announcement['image_url'] != null) ...[
                 SizedBox(height: 2.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    ApiConstants.getFullUrl(announcement['image_url']),
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
+                Text(
+                  announcement['content'] ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
+                SizedBox(height: 4.h),
               ],
-              SizedBox(height: 2.h),
-              Text(
-                announcement['content'] ?? '',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              SizedBox(height: 4.h),
-            ],
+            ),
           ),
         ),
       ),

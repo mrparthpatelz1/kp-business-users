@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:intl/intl.dart';
-import 'dart:io';
 import 'package:dropdown_search/dropdown_search.dart';
 import '../../../core/theme/app_theme.dart';
 import 'register_controller.dart';
@@ -520,6 +519,8 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
+                  containerBuilder: (context, popupWidget) =>
+                      SafeArea(child: popupWidget),
                   searchFieldProps: const TextFieldProps(
                     decoration: InputDecoration(
                       hintText: 'Search village...',
@@ -585,6 +586,8 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
+                  containerBuilder: (context, popupWidget) =>
+                      SafeArea(child: popupWidget),
                   searchFieldProps: const TextFieldProps(
                     decoration: InputDecoration(
                       hintText: 'Search country...',
@@ -620,6 +623,8 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
+                  containerBuilder: (context, popupWidget) =>
+                      SafeArea(child: popupWidget),
                   searchFieldProps: const TextFieldProps(
                     decoration: InputDecoration(
                       hintText: 'Search state...',
@@ -656,6 +661,8 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
+                  containerBuilder: (context, popupWidget) =>
+                      SafeArea(child: popupWidget),
                   searchFieldProps: const TextFieldProps(
                     decoration: InputDecoration(
                       hintText: 'Search city...',
@@ -1333,6 +1340,8 @@ class RegisterView extends GetView<RegisterController> {
                       ),
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
+                        containerBuilder: (context, popupWidget) =>
+                            SafeArea(child: popupWidget),
                         searchFieldProps: const TextFieldProps(
                           decoration: InputDecoration(
                             hintText: 'Search type...',
@@ -1372,6 +1381,8 @@ class RegisterView extends GetView<RegisterController> {
                       ),
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
+                        containerBuilder: (context, popupWidget) =>
+                            SafeArea(child: popupWidget),
                         searchFieldProps: const TextFieldProps(
                           decoration: InputDecoration(
                             hintText: 'Search category...',
@@ -1433,6 +1444,8 @@ class RegisterView extends GetView<RegisterController> {
                               ),
                               popupProps: PopupPropsMultiSelection.menu(
                                 showSearchBox: true,
+                                containerBuilder: (context, popupWidget) =>
+                                    SafeArea(child: popupWidget),
                                 searchFieldProps: const TextFieldProps(
                                   decoration: InputDecoration(
                                     hintText: 'Search subcategories...',
@@ -1626,6 +1639,8 @@ class RegisterView extends GetView<RegisterController> {
                         ),
                         popupProps: PopupProps.menu(
                           showSearchBox: true,
+                          containerBuilder: (context, popupWidget) =>
+                              SafeArea(child: popupWidget),
                           searchFieldProps: const TextFieldProps(
                             decoration: InputDecoration(
                               hintText: 'Search type...',
@@ -1673,6 +1688,8 @@ class RegisterView extends GetView<RegisterController> {
                         ),
                         popupProps: PopupProps.menu(
                           showSearchBox: true,
+                          containerBuilder: (context, popupWidget) =>
+                              SafeArea(child: popupWidget),
                           searchFieldProps: const TextFieldProps(
                             decoration: InputDecoration(
                               hintText: 'Search category...',
@@ -1728,6 +1745,8 @@ class RegisterView extends GetView<RegisterController> {
                                   ),
                                   popupProps: PopupPropsMultiSelection.menu(
                                     showSearchBox: true,
+                                    containerBuilder: (context, popupWidget) =>
+                                        SafeArea(child: popupWidget),
                                     searchFieldProps: const TextFieldProps(
                                       decoration: InputDecoration(
                                         hintText: 'Search subcategories...',

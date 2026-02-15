@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import '../../widgets/user_avatar.dart';
+import '../../routes/app_routes.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import '../posts/comments/comments_controller.dart';
@@ -48,9 +49,7 @@ class PostDetailView extends StatelessWidget {
                   if (isAd && post['image_url'] != null)
                     SliverToBoxAdapter(
                       child: Image.network(
-                        post['image_url'].startsWith('http')
-                            ? post['image_url']
-                            : '${ApiConstants.assetBaseUrl}${post['image_url']}',
+                        ApiConstants.getFullUrl(post['image_url']),
                         width: double.infinity,
                         fit: BoxFit.fitWidth,
                         errorBuilder: (_, __, ___) => const SizedBox(),
@@ -517,11 +516,13 @@ class PostDetailView extends StatelessWidget {
                     GestureDetector(
                       onTap: () {
                         // Navigate to commenter's profile
-                        // final commenterId = comment['user_id'];
-                        // Get.toNamed(
-                        //   Routes.OTHER_USER_PROFILE,
-                        //   arguments: {'userId': commenterId},
-                        // );
+                        final commenterId = comment['user_id'];
+                        if (commenterId != null) {
+                          Get.toNamed(
+                            Routes.OTHER_USER_PROFILE,
+                            arguments: {'userId': commenterId},
+                          );
+                        }
                       },
                       child: UserAvatar(
                         radius: 18,
@@ -546,11 +547,13 @@ class PostDetailView extends StatelessWidget {
                                 GestureDetector(
                                   onTap: () {
                                     // Navigate to commenter's profile
-                                    // final commenterId = comment['user_id'];
-                                    // Get.toNamed(
-                                    //   Routes.FULL_PROFILE,
-                                    //   arguments: {'userId': commenterId},
-                                    // );
+                                    final commenterId = comment['user_id'];
+                                    if (commenterId != null) {
+                                      Get.toNamed(
+                                        Routes.OTHER_USER_PROFILE,
+                                        arguments: {'userId': commenterId},
+                                      );
+                                    }
                                   },
                                   child: Text(
                                     comment['user_name'] ?? 'User',

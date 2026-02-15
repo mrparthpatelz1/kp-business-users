@@ -36,39 +36,45 @@ class AnnouncementsController extends GetxController {
     isLoading.value = false;
   }
 
-  /// Calculate how many announcements are unread based on last seen ID
+  /// Calculate how many announcements are unread based on last viewed time
   void _calculateUnreadCount() {
-    final lastSeenId = _storage.getLastSeenAnnouncementId();
-    if (lastSeenId == 0) {
-      // Never opened announcements - all are unread
-      unreadCount.value = announcements.length;
-    } else {
-      int count = 0;
-      for (final a in announcements) {
-        final aid = a['id'] is int
-            ? a['id']
-            : int.tryParse(a['id'].toString()) ?? 0;
-        if (aid > lastSeenId) {
-          count++;
+    final lastViewedTime = _storage.getLastViewedAnnouncementsTime();
+
+    // If first time (lastViewedTime is 0), don't show badges.
+    // Just mark current time and consider all as "seen" for notification purposes.
+    if (lastViewedTime == 0) {
+      unreadCount.value = 0;
+      markAllAsSeen(); // Initialize timestamp
+      return;
+    }
+
+    int count = 0;
+    // We assume announcements are sorted by date or have created_at
+    // But since API returns list, let's iterate.
+    // We need to parse 'created_at' string to timestamp.
+    for (final a in announcements) {
+      if (a['created_at'] != null) {
+        try {
+          final createdTime = DateTime.parse(
+            a['created_at'],
+          ).millisecondsSinceEpoch;
+          if (createdTime > lastViewedTime) {
+            count++;
+          }
+        } catch (e) {
+          // ignore parsing error
         }
       }
-      unreadCount.value = count;
     }
+    unreadCount.value = count;
   }
 
-  /// Mark all announcements as seen (store latest ID)
+  /// Mark all announcements as seen (store latest timestamp)
   void markAllAsSeen() {
-    if (announcements.isNotEmpty) {
-      int maxId = 0;
-      for (final a in announcements) {
-        final aid = a['id'] is int
-            ? a['id']
-            : int.tryParse(a['id'].toString()) ?? 0;
-        if (aid > maxId) maxId = aid;
-      }
-      _storage.setLastSeenAnnouncementId(maxId);
-      unreadCount.value = 0;
-    }
+    _storage.setLastViewedAnnouncementsTime(
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    unreadCount.value = 0;
   }
 
   Future<Map<String, dynamic>?> getAnnouncementDetail(String id) async {

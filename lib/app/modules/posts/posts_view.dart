@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import 'posts_controller.dart';
 import 'create_post_view.dart';
 import 'post_card_widget.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class PostsView extends GetView<PostsController> {
   const PostsView({super.key});
@@ -52,7 +53,7 @@ class PostsView extends GetView<PostsController> {
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value && controller.posts.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+                return const ShimmerPosts();
               }
 
               if (controller.posts.isEmpty) {

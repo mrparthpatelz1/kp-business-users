@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import '../providers/api_provider.dart';
 import '../../core/constants/api_constants.dart';
+import '../../routes/app_routes.dart';
 
 /// Handle background messages (must be top-level function)
 @pragma('vm:entry-point')
@@ -129,13 +130,15 @@ class NotificationService extends GetxService {
   }) {
     switch (type) {
       case 'user_approved':
-        Get.offAllNamed('/home');
+        Get.offAllNamed(Routes.HOME);
         break;
       case 'user_rejected':
-        Get.offAllNamed('/login');
+        Get.offAllNamed(Routes.LOGIN);
         break;
       case 'announcement':
-        Get.toNamed('/announcements');
+        // No specific route for announcements list in current Routes,
+        // using HOME for now or assuming it might be a tab
+        Get.toNamed(Routes.HOME);
         break;
       case 'chat_message':
         if (data != null) {
@@ -143,7 +146,7 @@ class NotificationService extends GetxService {
           final senderId = data['senderId'];
           if (conversationId != null) {
             Get.toNamed(
-              '/chat-detail',
+              Routes.CHAT_DETAIL,
               arguments: {
                 'conversationId': conversationId,
                 'receiverId': int.tryParse(senderId.toString()) ?? 0,

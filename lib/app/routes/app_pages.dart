@@ -10,6 +10,7 @@ import '../modules/main/main_view.dart';
 import '../modules/main/main_binding.dart';
 import '../modules/pending_approval/pending_approval_view.dart';
 import '../modules/profile/edit_profile_view.dart';
+import '../modules/profile/edit_profile_binding.dart';
 import '../modules/profile/full_profile_view.dart';
 import '../modules/profile/other_user_profile_view.dart';
 import '../modules/profile/other_user_profile_controller.dart';
@@ -48,7 +49,11 @@ class AppPages {
       name: Routes.PENDING_APPROVAL,
       page: () => const PendingApprovalView(),
     ),
-    GetPage(name: Routes.EDIT_PROFILE, page: () => const EditProfileView()),
+    GetPage(
+      name: Routes.EDIT_PROFILE,
+      page: () => const EditProfileView(),
+      binding: EditProfileBinding(),
+    ),
     GetPage(name: Routes.FULL_PROFILE, page: () => const FullProfileView()),
     GetPage(
       name: Routes.OTHER_USER_PROFILE,

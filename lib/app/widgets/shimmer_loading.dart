@@ -75,3 +75,108 @@ class ShimmerProfile extends StatelessWidget {
     );
   }
 }
+
+class ShimmerHome extends StatelessWidget {
+  const ShimmerHome({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Welcome Card Shimmer
+          ShimmerLoading.rectangular(
+            height: 100,
+            shapeBorder: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Ads Slider Shimmer
+          const ShimmerLoading.rectangular(height: 20, width: 120),
+          const SizedBox(height: 10),
+          ShimmerLoading.rectangular(
+            height: 200,
+            shapeBorder: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Recent Posts Header Shimmer
+          const ShimmerLoading.rectangular(height: 20, width: 140),
+          const SizedBox(height: 10),
+
+          // Posts List Shimmer
+          ...List.generate(
+            3,
+            (index) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ShimmerLoading.rectangular(
+                height: 80,
+                shapeBorder: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ShimmerPosts extends StatelessWidget {
+  const ShimmerPosts({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: ShimmerLoading.rectangular(
+          height: 120,
+          shapeBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ShimmerDirectory extends StatelessWidget {
+  const ShimmerDirectory({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 6,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            const ShimmerLoading.circular(width: 56, height: 56),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const ShimmerLoading.rectangular(height: 16, width: 150),
+                  const SizedBox(height: 8),
+                  const ShimmerLoading.rectangular(height: 14, width: 100),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

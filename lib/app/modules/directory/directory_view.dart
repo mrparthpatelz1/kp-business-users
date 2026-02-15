@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../widgets/user_avatar.dart';
 import 'directory_controller.dart';
 import 'user_detail_view.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class DirectoryView extends GetView<DirectoryController> {
   const DirectoryView({super.key});
@@ -63,7 +64,7 @@ class DirectoryView extends GetView<DirectoryController> {
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value && controller.users.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
+                return const ShimmerDirectory();
               }
 
               if (controller.users.isEmpty) {
@@ -301,259 +302,263 @@ class DirectoryView extends GetView<DirectoryController> {
   void _showFilterSheet(BuildContext context) {
     Get.bottomSheet(
       isScrollControlled: true,
-      Container(
-        padding: EdgeInsets.all(4.w),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Filter Users',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Get.back(),
-                  ),
-                ],
-              ),
-              SizedBox(height: 2.h),
-
-              // User Type Filter
-              Text('User Type', style: Theme.of(context).textTheme.titleMedium),
-              SizedBox(height: 1.h),
-              Obx(
-                () => Wrap(
-                  spacing: 2.w,
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.all(4.w),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: controller.selectedUserType.value.isEmpty,
-                      onSelected: (_) {
-                        controller.filterByUserType('');
-                      },
+                    Text(
+                      'Filter Users',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    ChoiceChip(
-                      label: const Text('Business'),
-                      selected: controller.selectedUserType.value == 'business',
-                      onSelected: (_) {
-                        controller.filterByUserType('business');
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Job Seeker'),
-                      selected: controller.selectedUserType.value == 'job',
-                      onSelected: (_) {
-                        controller.filterByUserType('job');
-                      },
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Get.back(),
                     ),
                   ],
                 ),
-              ),
-              SizedBox(height: 2.h),
-
-              // Business Category Filter
-              Obx(() {
-                // Show business filters only when NOT job seeker
-                if (controller.selectedUserType.value != 'job') {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Business Category',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      SizedBox(height: 1.h),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        value: controller.selectedBusinessCategory.value.isEmpty
-                            ? null
-                            : controller.selectedBusinessCategory.value,
-                        hint: const Text('Select category'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('All Categories'),
-                          ),
-                          ...controller.businessCategories.map(
-                            (cat) => DropdownMenuItem(
-                              value: cat['id'].toString(),
-                              child: Text(cat['category_name']),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) =>
-                            controller.filterByBusinessCategory(value ?? ''),
-                      ),
-                      SizedBox(height: 2.h),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-
-              // Business Subcategory Filter
-              Obx(() {
-                if (controller.selectedBusinessCategory.value.isNotEmpty &&
-                    controller.businessSubcategories.isNotEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Business Subcategory',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      SizedBox(height: 1.h),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        value:
-                            controller.selectedBusinessSubcategory.value.isEmpty
-                            ? null
-                            : controller.selectedBusinessSubcategory.value,
-                        hint: const Text('Select subcategory'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('All Subcategories'),
-                          ),
-                          ...controller.businessSubcategories.map(
-                            (sub) => DropdownMenuItem(
-                              value: sub['id'].toString(),
-                              child: Text(sub['subcategory_name']),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) =>
-                            controller.filterByBusinessSubcategory(value ?? ''),
-                      ),
-                      SizedBox(height: 2.h),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-
-              // Job Category Filter
-              Obx(() {
-                // Show job filters only when NOT business user
-                if (controller.selectedUserType.value != 'business') {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Job Category',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      SizedBox(height: 1.h),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        value: controller.selectedJobCategory.value.isEmpty
-                            ? null
-                            : controller.selectedJobCategory.value,
-                        hint: const Text('Select category'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('All Categories'),
-                          ),
-                          ...controller.jobCategories.map(
-                            (cat) => DropdownMenuItem(
-                              value: cat['id'].toString(),
-                              child: Text(cat['category_name']),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) =>
-                            controller.filterByJobCategory(value ?? ''),
-                      ),
-                      SizedBox(height: 2.h),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-
-              // Job Subcategory Filter
-              Obx(() {
-                if (controller.selectedJobCategory.value.isNotEmpty &&
-                    controller.jobSubcategories.isNotEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Job Subcategory',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      SizedBox(height: 1.h),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                        ),
-                        value: controller.selectedJobSubcategory.value.isEmpty
-                            ? null
-                            : controller.selectedJobSubcategory.value,
-                        hint: const Text('Select subcategory'),
-                        items: [
-                          const DropdownMenuItem(
-                            value: '',
-                            child: Text('All Subcategories'),
-                          ),
-                          ...controller.jobSubcategories.map(
-                            (sub) => DropdownMenuItem(
-                              value: sub['id'].toString(),
-                              child: Text(sub['subcategory_name']),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) =>
-                            controller.filterByJobSubcategory(value ?? ''),
-                      ),
-                      SizedBox(height: 2.h),
-                    ],
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-
-              SizedBox(height: 2.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Get.back(),
-                  child: const Text('Apply Filters'),
+                SizedBox(height: 2.h),
+                // User Type Filter
+                Text(
+                  'User Type',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-              ),
-            ],
+                SizedBox(height: 1.h),
+                Obx(
+                  () => Wrap(
+                    spacing: 2.w,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All'),
+                        selected: controller.selectedUserType.value.isEmpty,
+                        onSelected: (_) {
+                          controller.filterByUserType('');
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Business'),
+                        selected:
+                            controller.selectedUserType.value == 'business',
+                        onSelected: (_) {
+                          controller.filterByUserType('business');
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Job Seeker'),
+                        selected: controller.selectedUserType.value == 'job',
+                        onSelected: (_) {
+                          controller.filterByUserType('job');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                // Business Category Filter
+                Obx(() {
+                  // Show business filters only when NOT job seeker
+                  if (controller.selectedUserType.value != 'job') {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Business Category',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        SizedBox(height: 1.h),
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          value:
+                              controller.selectedBusinessCategory.value.isEmpty
+                              ? null
+                              : controller.selectedBusinessCategory.value,
+                          hint: const Text('Select category'),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('All Categories'),
+                            ),
+                            ...controller.businessCategories.map(
+                              (cat) => DropdownMenuItem(
+                                value: cat['id'].toString(),
+                                child: Text(cat['category_name']),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              controller.filterByBusinessCategory(value ?? ''),
+                        ),
+                        SizedBox(height: 2.h),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                // Business Subcategory Filter
+                Obx(() {
+                  if (controller.selectedBusinessCategory.value.isNotEmpty &&
+                      controller.businessSubcategories.isNotEmpty) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Business Subcategory',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        SizedBox(height: 1.h),
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          value:
+                              controller
+                                  .selectedBusinessSubcategory
+                                  .value
+                                  .isEmpty
+                              ? null
+                              : controller.selectedBusinessSubcategory.value,
+                          hint: const Text('Select subcategory'),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('All Subcategories'),
+                            ),
+                            ...controller.businessSubcategories.map(
+                              (sub) => DropdownMenuItem(
+                                value: sub['id'].toString(),
+                                child: Text(sub['subcategory_name']),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) => controller
+                              .filterByBusinessSubcategory(value ?? ''),
+                        ),
+                        SizedBox(height: 2.h),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                // Job Category Filter
+                Obx(() {
+                  // Show job filters only when NOT business user
+                  if (controller.selectedUserType.value != 'business') {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Job Category',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        SizedBox(height: 1.h),
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          value: controller.selectedJobCategory.value.isEmpty
+                              ? null
+                              : controller.selectedJobCategory.value,
+                          hint: const Text('Select category'),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('All Categories'),
+                            ),
+                            ...controller.jobCategories.map(
+                              (cat) => DropdownMenuItem(
+                                value: cat['id'].toString(),
+                                child: Text(cat['category_name']),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              controller.filterByJobCategory(value ?? ''),
+                        ),
+                        SizedBox(height: 2.h),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                // Job Subcategory Filter
+                Obx(() {
+                  if (controller.selectedJobCategory.value.isNotEmpty &&
+                      controller.jobSubcategories.isNotEmpty) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Job Subcategory',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        SizedBox(height: 1.h),
+                        DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          value: controller.selectedJobSubcategory.value.isEmpty
+                              ? null
+                              : controller.selectedJobSubcategory.value,
+                          hint: const Text('Select subcategory'),
+                          items: [
+                            const DropdownMenuItem(
+                              value: '',
+                              child: Text('All Subcategories'),
+                            ),
+                            ...controller.jobSubcategories.map(
+                              (sub) => DropdownMenuItem(
+                                value: sub['id'].toString(),
+                                child: Text(sub['subcategory_name']),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              controller.filterByJobSubcategory(value ?? ''),
+                        ),
+                        SizedBox(height: 2.h),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+                SizedBox(height: 2.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Apply Filters'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

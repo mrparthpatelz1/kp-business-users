@@ -247,7 +247,12 @@ class EditProfileController extends GetxController {
 
   Future<void> pickProfileImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
     if (image != null) {
       profileImage.value = File(image.path);
     }
@@ -255,7 +260,12 @@ class EditProfileController extends GetxController {
 
   Future<void> pickBusinessLogo(int index) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+    );
     if (image != null) {
       if (index < businessForms.length) {
         businessForms[index].logo.value = File(image.path);

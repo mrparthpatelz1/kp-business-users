@@ -46,12 +46,13 @@ class StorageService extends GetxService {
   }
 
   // Announcement seen tracking
-  int getLastSeenAnnouncementId() {
-    return _storage.read('last_seen_announcement_id') ?? 0;
+  // Announcement seen tracking
+  int getLastViewedAnnouncementsTime() {
+    return _storage.read('last_viewed_announcements_time') ?? 0;
   }
 
-  void setLastSeenAnnouncementId(int id) {
-    _storage.write('last_seen_announcement_id', id);
+  void setLastViewedAnnouncementsTime(int timestamp) {
+    _storage.write('last_viewed_announcements_time', timestamp);
   }
 
   // Helper to extract numeric User ID from JWT token

@@ -20,20 +20,36 @@ class SplashController extends GetxController {
       debugPrint('StorageService found, isLoggedIn: ${storage.isLoggedIn}');
 
       if (storage.isLoggedIn) {
-        // Upload FCM token for logged-in user on app start
-        try {
-          if (Get.isRegistered<NotificationService>()) {
-            final notificationService = Get.find<NotificationService>();
-            await notificationService.uploadTokenToServer();
-            debugPrint('FCM token uploaded on app start');
-          }
-        } catch (e) {
-          debugPrint('Failed to upload FCM token on app start: $e');
-          // Don't block navigation if FCM upload fails
-        }
+        final user = storage.user;
+        final status = user?['status'] ?? 'approved';
 
-        debugPrint('Navigating to HOME');
-        Get.offAllNamed(Routes.HOME);
+        if (status == 'pending') {
+          debugPrint('Navigating to PENDING_APPROVAL');
+          Get.offAllNamed(Routes.PENDING_APPROVAL);
+        } else if (status == 'rejected') {
+          debugPrint('Navigating to REJECTED');
+          Get.offAllNamed(
+            Routes.REJECTED,
+            arguments: {
+              'reason':
+                  user?['rejection_reason'] ?? 'Contact admin for details',
+            },
+          );
+        } else {
+          // Upload FCM token for logged-in user on app start
+          try {
+            if (Get.isRegistered<NotificationService>()) {
+              final notificationService = Get.find<NotificationService>();
+              await notificationService.uploadTokenToServer();
+              debugPrint('FCM token uploaded on app start');
+            }
+          } catch (e) {
+            debugPrint('Failed to upload FCM token on app start: $e');
+          }
+
+          debugPrint('Navigating to HOME');
+          Get.offAllNamed(Routes.HOME);
+        }
       } else {
         debugPrint('Navigating to LOGIN');
         Get.offAllNamed(Routes.LOGIN);

@@ -19,6 +19,7 @@ import '../profile/profile_controller.dart';
 import '../profile/profile_view.dart';
 import '../../routes/app_routes.dart';
 import 'post_detail_view.dart';
+import '../../widgets/shimmer_loading.dart';
 
 class MainController extends GetxController {
   final RxInt selectedIndex = 0.obs;
@@ -204,148 +205,154 @@ class _HomeTab extends StatelessWidget {
           }),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await postsController.loadHomeScreenPosts(refresh: true);
-          await postsController.loadPosts(refresh: true);
-          await postsController.loadAds();
-          await announcementsController.loadAnnouncements();
-          await chatController.loadUnreadCount();
-        },
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (ScrollNotification scrollInfo) {
-            if (scrollInfo.metrics.pixels >=
-                scrollInfo.metrics.maxScrollExtent - 200) {
-              // Load more when near bottom
-              postsController.loadHomeScreenPosts(loadMore: true);
-            }
-            return false;
+      body: Obx(() {
+        if (postsController.isLoadingHomeScreen.value &&
+            postsController.homeScreenPosts.isEmpty) {
+          return const ShimmerHome();
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            await postsController.loadHomeScreenPosts(refresh: true);
+            await postsController.loadPosts(refresh: true);
+            await postsController.loadAds();
+            await announcementsController.loadAnnouncements();
+            await chatController.loadUnreadCount();
           },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.all(4.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome Card
-                Obx(() {
-                  final user = authService.currentUser.value;
-                  return Card(
-                    color: AppTheme.primaryColor,
-                    child: Padding(
-                      padding: EdgeInsets.all(4.w),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            backgroundImage: user?['profile_picture'] != null
-                                ? NetworkImage(
-                                    ApiConstants.getFullUrl(
-                                      user!['profile_picture'],
-                                    ),
-                                  )
-                                : null,
-                            child: user?['profile_picture'] == null
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.white,
-                                    size: 30,
-                                  )
-                                : null,
-                          ),
-                          SizedBox(width: 4.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Welcome back,',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
-                                    fontSize: 14.sp,
-                                  ),
-                                ),
-                                Text(
-                                  user?['full_name'] ?? 'User',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-                SizedBox(height: 3.h),
-
-                // Ads Slider - Horizontal carousel for ads
-                _buildAdsSlider(context, postsController),
-
-                SizedBox(height: 3.h),
-
-                // Recent Posts - Uses same UI as PostsView
-                Text(
-                  'Recent Posts',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 1.h),
-                Obx(() {
-                  // Get exactly 2 most recent non-ad posts from decoupled home data
-                  final recentPosts = postsController.recentPosts;
-
-                  if (recentPosts.isEmpty) {
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels >=
+                  scrollInfo.metrics.maxScrollExtent - 200) {
+                // Load more when near bottom
+                postsController.loadHomeScreenPosts(loadMore: true);
+              }
+              return false;
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.all(4.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Welcome Card
+                  Obx(() {
+                    final user = authService.currentUser.value;
                     return Card(
+                      color: AppTheme.primaryColor,
                       child: Padding(
                         padding: EdgeInsets.all(4.w),
-                        child: Center(
-                          child: Text(
-                            'No posts yet',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundImage: user?['profile_picture'] != null
+                                  ? NetworkImage(
+                                      ApiConstants.getFullUrl(
+                                        user!['profile_picture'],
+                                      ),
+                                    )
+                                  : null,
+                              child: user?['profile_picture'] == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 30,
+                                    )
+                                  : null,
+                            ),
+                            SizedBox(width: 4.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Welcome back,',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 14.sp,
+                                    ),
+                                  ),
+                                  Text(
+                                    user?['full_name'] ?? 'User',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
-                  }
+                  }),
+                  SizedBox(height: 1.5.h),
 
-                  return Column(
-                    children: recentPosts
-                        .map((p) => PostCard(post: p, compact: true))
-                        .toList(),
-                  );
-                }),
-                SizedBox(height: 2.h),
+                  // Ads Slider - Horizontal carousel for ads
+                  _buildAdsSlider(context, postsController),
 
-                // View All Posts Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => Get.find<MainController>().changeTab(1),
-                    child: const Text('View All Posts'),
+                  SizedBox(height: 1.5.h),
+
+                  // Recent Posts - Uses same UI as PostsView
+                  Text(
+                    'Recent Posts',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 2.h),
-                // Loading Indicator
-                Obx(() {
-                  if (postsController.isLoadingHomeScreen.value &&
-                      postsController.homeScreenPage.value > 1) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return const SizedBox.shrink();
-                }),
-                SizedBox(height: 4.h),
-              ],
+                  SizedBox(height: 1.h),
+                  Obx(() {
+                    // Get exactly 2 most recent non-ad posts from decoupled home data
+                    final recentPosts = postsController.recentPosts;
+
+                    if (recentPosts.isEmpty) {
+                      return Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(4.w),
+                          child: Center(
+                            child: Text(
+                              'No posts yet',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: recentPosts
+                          .map((p) => PostCard(post: p, compact: true))
+                          .toList(),
+                    );
+                  }),
+                  SizedBox(height: 2.h),
+
+                  // View All Posts Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Get.find<MainController>().changeTab(1),
+                      child: const Text('View All Posts'),
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  // Loading Indicator
+                  Obx(() {
+                    if (postsController.isLoadingHomeScreen.value &&
+                        postsController.homeScreenPage.value > 1) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return const SizedBox.shrink();
+                  }),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -395,7 +402,7 @@ class _HomeTab extends StatelessWidget {
           ),
           SizedBox(height: 1.h),
           SizedBox(
-            height: 25.h, // Increased from 15.h to 25.h
+            height: 40.h, // Increased to ~40% of screen height
             child: PageView.builder(
               controller: pageController,
               onPageChanged: (index) => currentPage.value = index,
