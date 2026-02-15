@@ -39,9 +39,16 @@ class AuthService extends GetxService {
   }
 
   // Register with file upload
-  Future<Map<String, dynamic>> registerWithFile(FormData formData) async {
+  Future<Map<String, dynamic>> registerWithFile(
+    FormData formData, {
+    ProgressCallback? onSendProgress,
+  }) async {
     try {
-      final response = await _api.postFormData(ApiConstants.register, formData);
+      final response = await _api.postFormData(
+        ApiConstants.register,
+        formData,
+        onSendProgress: onSendProgress,
+      );
       return {
         'success': true,
         'message': response.data['message'],
@@ -169,7 +176,7 @@ class AuthService extends GetxService {
   }
 
   // Delete Business
-  Future<Map<String, dynamic>> deleteBusiness(int businessId) async {
+  Future<Map<String, dynamic>> deleteBusiness(String businessId) async {
     try {
       final response = await _api.delete(
         '${ApiConstants.profile}/business/$businessId',

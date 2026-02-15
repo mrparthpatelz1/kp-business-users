@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/shimmer_loading.dart';
 import 'home_controller.dart';
 
 class HomeView extends GetView<HomeController> {
@@ -76,7 +77,7 @@ class HomeView extends GetView<HomeController> {
         body: Obx(() {
           final user = controller.user;
           if (user == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const ShimmerProfile();
           }
 
           return SingleChildScrollView(

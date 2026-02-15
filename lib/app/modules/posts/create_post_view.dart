@@ -75,20 +75,6 @@ class _CreatePostViewState extends State<CreatePostView> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      imageQuality: 80,
-    );
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
-    }
-  }
-
   void _removeImage() {
     setState(() {
       _selectedImage = null;
@@ -207,7 +193,57 @@ class _CreatePostViewState extends State<CreatePostView> {
                     )
                   else
                     InkWell(
-                      onTap: _pickImage,
+                      onTap: () {
+                        Get.bottomSheet(
+                          SafeArea(
+                            child: Container(
+                              color: Colors.white,
+                              child: Wrap(
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.camera_alt),
+                                    title: const Text('Camera'),
+                                    onTap: () async {
+                                      Get.back();
+                                      final XFile? image = await _picker
+                                          .pickImage(
+                                            source: ImageSource.camera,
+                                            maxWidth: 1920,
+                                            maxHeight: 1080,
+                                            imageQuality: 80,
+                                          );
+                                      if (image != null) {
+                                        setState(() {
+                                          _selectedImage = File(image.path);
+                                        });
+                                      }
+                                    },
+                                  ),
+                                  ListTile(
+                                    leading: const Icon(Icons.photo_library),
+                                    title: const Text('Gallery'),
+                                    onTap: () async {
+                                      Get.back();
+                                      final XFile? image = await _picker
+                                          .pickImage(
+                                            source: ImageSource.gallery,
+                                            maxWidth: 1920,
+                                            maxHeight: 1080,
+                                            imageQuality: 80,
+                                          );
+                                      if (image != null) {
+                                        setState(() {
+                                          _selectedImage = File(image.path);
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                       child: Container(
                         height: 15.h,
                         width: double.infinity,

@@ -23,42 +23,106 @@ class EditProfileView extends GetView<EditProfileController> {
       appBar: AppBar(
         title: const Text('Edit Profile'),
         actions: [
-          Obx(
-            () => controller.isSaving.value
-                ? const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+          IconButton(
+            onPressed: () async {
+              // Validate main form
+              if (!formKey.currentState!.validate()) {
+                return;
+              }
+
+              // Validate job form if user type is 'job'
+              if (controller.userType.value == 'job') {
+                if (!controller.jobFormKey.currentState!.validate()) {
+                  return;
+                }
+              }
+
+              // Show progress dialog
+              Get.dialog(
+                PopScope(
+                  canPop: false,
+                  child: Dialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.check),
-                    onPressed: () async {
-                      if (formKey.currentState!.validate()) {
-                        final success = await controller.saveProfile();
-                        if (success) {
-                          Get.back();
-                          Get.snackbar(
-                            'Success',
-                            'Profile updated successfully',
-                            backgroundColor: AppTheme.successColor,
-                            colorText: Colors.white,
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        } else {
-                          Get.snackbar(
-                            'Error',
-                            'Failed to update profile',
-                            backgroundColor: AppTheme.errorColor,
-                            colorText: Colors.white,
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        }
-                      }
-                    },
+                    child: Padding(
+                      padding: EdgeInsets.all(5.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Updating Profile...',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 1.h),
+                          Obx(() {
+                            final progress = controller.uploadProgress.value;
+                            if (progress > 0 && progress < 1.0) {
+                              return Column(
+                                children: [
+                                  LinearProgressIndicator(value: progress),
+                                  SizedBox(height: 1.h),
+                                  Text(
+                                    '${(progress * 100).toStringAsFixed(0)}%',
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            return Text(
+                              'Please wait while we save your changes.',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                   ),
+                ),
+                barrierDismissible: false,
+              );
+
+              final success = await controller.saveProfile();
+
+              // Close dialog
+              if (Get.isDialogOpen ?? false) {
+                Get.back();
+              }
+
+              if (success) {
+                Get.back();
+                Get.snackbar(
+                  'Success',
+                  'Profile updated successfully',
+                  backgroundColor: AppTheme.successColor,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: EdgeInsets.all(4.w),
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Failed to update profile',
+                  backgroundColor: AppTheme.errorColor,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: EdgeInsets.all(4.w),
+                );
+              }
+            },
+            icon: const Icon(Icons.check),
           ),
         ],
       ),
@@ -66,6 +130,7 @@ class EditProfileView extends GetView<EditProfileController> {
         child: Form(
           key: formKey,
           child: SingleChildScrollView(
+            controller: controller.scrollController,
             padding: EdgeInsets.all(4.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,6 +220,41 @@ class EditProfileView extends GetView<EditProfileController> {
                         ),
                       );
                     }).toList(),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+
+                // User Type Dropdown (Allow switching)
+                Obx(
+                  () => DropdownSearch<String>(
+                    items: (filter, _) => controller.userTypeOptions
+                        .map((e) => e.capitalizeFirst!)
+                        .toList(),
+                    selectedItem: controller.userType.value.capitalizeFirst,
+                    decoratorProps: const DropDownDecoratorProps(
+                      decoration: InputDecoration(
+                        labelText: 'I am a...',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    popupProps: const PopupProps.menu(
+                      fit: FlexFit.loose,
+                      constraints: BoxConstraints(maxHeight: 200),
+                    ),
+                    onChanged: (val) {
+                      if (val != null) {
+                        controller.userType.value = val.toLowerCase();
+                        // If switching to business and no form exists, add one
+                        if (controller.userType.value == 'business' &&
+                            controller.businessForms.isEmpty) {
+                          controller.addBusinessForm();
+                        }
+                      }
+                    },
+                    onBeforePopupOpening: (selectedItem) async {
+                      FocusScope.of(context).unfocus();
+                      return true;
+                    },
                   ),
                 ),
                 SizedBox(height: 2.h),
@@ -286,6 +386,10 @@ class EditProfileView extends GetView<EditProfileController> {
                     onChanged: (item) {
                       if (item != null) controller.loadStates(item['code']);
                     },
+                    onBeforePopupOpening: (selectedItem) async {
+                      FocusScope.of(context).unfocus();
+                      return true;
+                    },
                   ),
                 ),
                 SizedBox(height: 2.h),
@@ -318,6 +422,10 @@ class EditProfileView extends GetView<EditProfileController> {
                       if (item != null) controller.loadCities(item['code']);
                     },
                     validator: (v) => v == null ? 'Required' : null,
+                    onBeforePopupOpening: (selectedItem) async {
+                      FocusScope.of(context).unfocus();
+                      return true;
+                    },
                   ),
                 ),
                 SizedBox(height: 2.h),
@@ -350,6 +458,10 @@ class EditProfileView extends GetView<EditProfileController> {
                       controller.selectedCityName.value = item?['name'] ?? '';
                     },
                     validator: (v) => v == null ? 'Required' : null,
+                    onBeforePopupOpening: (selectedItem) async {
+                      FocusScope.of(context).unfocus();
+                      return true;
+                    },
                   ),
                 ),
                 SizedBox(height: 2.h),
@@ -461,7 +573,7 @@ class EditProfileView extends GetView<EditProfileController> {
     );
   }
 
-  Widget _buildEducationItem(int index, Map<String, dynamic> item) {
+  Widget _buildEducationItem(int index, EducationFormState item) {
     return Card(
       margin: EdgeInsets.only(bottom: 2.h),
       child: Padding(
@@ -481,48 +593,151 @@ class EditProfileView extends GetView<EditProfileController> {
                 ),
               ],
             ),
-            TextFormField(
-              initialValue: item['qualification'],
-              decoration: const InputDecoration(
-                labelText: 'Degree/Qualification',
+
+            // Education Type
+            Obx(
+              () => DropdownButtonFormField<String>(
+                value: item.educationType.value,
+                decoration: const InputDecoration(labelText: 'Education Type'),
+                items: const [
+                  DropdownMenuItem(value: 'school', child: Text('School')),
+                  DropdownMenuItem(
+                    value: 'college',
+                    child: Text('College/University'),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) item.educationType.value = v;
+                },
               ),
-              onChanged: (v) =>
-                  controller.updateEducation(index, 'qualification', v),
             ),
-            SizedBox(height: 1.h),
-            TextFormField(
-              initialValue: item['institution'],
-              decoration: const InputDecoration(
-                labelText: 'Institution/School',
-              ),
-              onChanged: (v) =>
-                  controller.updateEducation(index, 'institution', v),
-            ),
-            SizedBox(height: 1.h),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: item['passing_year']?.toString(),
-                    decoration: const InputDecoration(
-                      labelText: 'Passing Year',
+            SizedBox(height: 2.h),
+
+            // Qualification & Institution (Common but labels might differ slightly)
+            Obx(() {
+              final isCollege = item.educationType.value == 'college';
+              return Column(
+                children: [
+                  TextFormField(
+                    controller: item.qualificationController,
+                    decoration: InputDecoration(
+                      labelText: isCollege ? 'Degree/Course' : 'Standard/Class',
                     ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (v) =>
-                        controller.updateEducation(index, 'passing_year', v),
                   ),
-                ),
-                SizedBox(width: 4.w),
-                Expanded(
-                  child: TextFormField(
-                    initialValue: item['grade']?.toString(),
-                    decoration: const InputDecoration(labelText: 'Grade/CGPA'),
-                    onChanged: (v) =>
-                        controller.updateEducation(index, 'grade', v),
+                  SizedBox(height: 2.h),
+                  TextFormField(
+                    controller: item.institutionController,
+                    decoration: InputDecoration(
+                      labelText: isCollege
+                          ? 'University/College Name'
+                          : 'School Name',
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              );
+            }),
+            SizedBox(height: 2.h),
+
+            Obx(() {
+              if (item.educationType.value == 'college') {
+                return Column(
+                  children: [
+                    TextFormField(
+                      controller: item.fieldOfStudyController,
+                      decoration: const InputDecoration(
+                        labelText: 'Field of Study',
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: item.startYearController,
+                            decoration: const InputDecoration(
+                              labelText: 'Start Year',
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Obx(
+                                () => Checkbox(
+                                  value: item.isCurrentlyStudying.value,
+                                  onChanged: (v) =>
+                                      item.isCurrentlyStudying.value =
+                                          v ?? false,
+                                ),
+                              ),
+                              const Flexible(child: Text('Currently Studying')),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+
+                    if (item.isCurrentlyStudying.value)
+                      TextFormField(
+                        controller: item.currentYearController,
+                        decoration: const InputDecoration(
+                          labelText: 'Current Year (e.g. 2nd Year)',
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: item.passingYearController,
+                              decoration: const InputDecoration(
+                                labelText: 'Passing Year',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: TextFormField(
+                              controller: item.gradeController,
+                              decoration: const InputDecoration(
+                                labelText: 'Grade/CGPA',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                );
+              } else {
+                // School
+                return Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: item.passingYearController,
+                        decoration: const InputDecoration(
+                          labelText: 'Passing Year',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: TextFormField(
+                        controller: item.gradeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Grade/Percentage',
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+            }),
           ],
         ),
       ),
@@ -530,183 +745,190 @@ class EditProfileView extends GetView<EditProfileController> {
   }
 
   Widget _buildJobSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Job Details'),
-        SizedBox(height: 2.h),
-        TextFormField(
-          controller: controller.jobCompanyController,
-          decoration: const InputDecoration(
-            labelText: 'Company Name',
-            prefixIcon: Icon(Icons.business),
+    return Form(
+      key: controller.jobFormKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(context, 'Job Details'),
+          SizedBox(height: 2.h),
+          TextFormField(
+            controller: controller.jobCompanyController,
+            decoration: const InputDecoration(
+              labelText: 'Company Name',
+              prefixIcon: Icon(Icons.business),
+            ),
           ),
-        ),
-        SizedBox(height: 2.h),
+          SizedBox(height: 2.h),
 
-        // Job Type - Searchable Dropdown
-        Obx(
-          () => DropdownSearch<Map<String, dynamic>>(
-            items: (filter, _) => controller.jobTypes.toList(),
-            selectedItem: controller.jobTypes.firstWhereOrNull(
-              (t) => t['id'] == controller.selectedJobTypeId.value,
-            ),
-            itemAsString: (item) => item['type_name'] ?? '',
-            compareFn: (a, b) => a['id'] == b['id'],
-            decoratorProps: const DropDownDecoratorProps(
-              decoration: InputDecoration(
-                labelText: 'Job Type',
-                prefixIcon: Icon(Icons.work_outline),
+          // Job Type - Searchable Dropdown
+          Obx(
+            () => DropdownSearch<Map<String, dynamic>>(
+              items: (filter, _) => controller.jobTypes.toList(),
+              selectedItem: controller.jobTypes.firstWhereOrNull(
+                (t) => t['id'] == controller.selectedJobTypeId.value,
               ),
-            ),
-            popupProps: PopupProps.menu(
-              showSearchBox: true,
-              searchFieldProps: const TextFieldProps(
+              itemAsString: (item) => item['type_name'] ?? '',
+              compareFn: (a, b) => a['id'] == b['id'],
+              decoratorProps: const DropDownDecoratorProps(
                 decoration: InputDecoration(
-                  hintText: 'Search type...',
-                  prefixIcon: Icon(Icons.search),
+                  labelText: 'Job Type',
+                  prefixIcon: Icon(Icons.work_outline),
                 ),
               ),
-            ),
-            onChanged: (item) {
-              controller.selectedJobTypeId.value = item?['id'] ?? 0;
-            },
-          ),
-        ),
-        SizedBox(height: 2.h),
-
-        // Job Category - Searchable Dropdown
-        Obx(
-          () => DropdownSearch<Map<String, dynamic>>(
-            items: (filter, _) => controller.jobCategories.toList(),
-            selectedItem: controller.jobCategories.firstWhereOrNull(
-              (c) => c['id'] == controller.selectedJobCategoryId.value,
-            ),
-            itemAsString: (item) => item['category_name'] ?? '',
-            compareFn: (a, b) => a['id'] == b['id'],
-            decoratorProps: const DropDownDecoratorProps(
-              decoration: InputDecoration(
-                labelText: 'Job Category',
-                prefixIcon: Icon(Icons.category),
-              ),
-            ),
-            popupProps: PopupProps.menu(
-              showSearchBox: true,
-              searchFieldProps: const TextFieldProps(
-                decoration: InputDecoration(
-                  hintText: 'Search category...',
-                  prefixIcon: Icon(Icons.search),
+              popupProps: PopupProps.menu(
+                showSearchBox: true,
+                searchFieldProps: const TextFieldProps(
+                  decoration: InputDecoration(
+                    hintText: 'Search type...',
+                    prefixIcon: Icon(Icons.search),
+                  ),
                 ),
               ),
+              onChanged: (item) {
+                controller.selectedJobTypeId.value = item?['id'] ?? 0;
+              },
+              onBeforePopupOpening: (selectedItem) async {
+                FocusScope.of(context).unfocus();
+                return true;
+              },
             ),
-            onChanged: (item) {
-              if (item != null) controller.loadJobSubcategories(item['id']);
-            },
           ),
-        ),
-        SizedBox(height: 2.h),
+          SizedBox(height: 2.h),
 
-        // Job Subcategories - Multi-Select Dropdown
-        Obx(
-          () => controller.jobSubcategories.isNotEmpty
-              ? Column(
-                  children: [
-                    DropdownSearch<Map<String, dynamic>>.multiSelection(
-                      items: (filter, _) =>
-                          controller.jobSubcategories.toList(),
-                      selectedItems: controller.jobSubcategories
-                          .where(
-                            (sub) => controller.selectedJobSubcategoryIds
-                                .contains(sub['id']),
-                          )
-                          .toList(),
-                      itemAsString: (item) => item['subcategory_name'] ?? '',
-                      compareFn: (a, b) => a['id'] == b['id'],
-                      decoratorProps: const DropDownDecoratorProps(
-                        decoration: InputDecoration(
-                          labelText: 'Job Subcategories',
-                          prefixIcon: Icon(Icons.category_outlined),
-                          hintText: 'Select multiple subcategories',
-                        ),
-                      ),
-                      popupProps: PopupPropsMultiSelection.menu(
-                        showSearchBox: true,
-                        searchFieldProps: const TextFieldProps(
+          // Job Category - Searchable Dropdown
+          Obx(
+            () => DropdownSearch<Map<String, dynamic>>(
+              items: (filter, _) => controller.jobCategories.toList(),
+              selectedItem: controller.jobCategories.firstWhereOrNull(
+                (c) => c['id'] == controller.selectedJobCategoryId.value,
+              ),
+              itemAsString: (item) => item['category_name'] ?? '',
+              compareFn: (a, b) => a['id'] == b['id'],
+              decoratorProps: const DropDownDecoratorProps(
+                decoration: InputDecoration(
+                  labelText: 'Job Category',
+                  prefixIcon: Icon(Icons.category),
+                ),
+              ),
+              popupProps: PopupProps.menu(
+                showSearchBox: true,
+                searchFieldProps: const TextFieldProps(
+                  decoration: InputDecoration(
+                    hintText: 'Search category...',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+              ),
+              onChanged: (item) {
+                if (item != null) controller.loadJobSubcategories(item['id']);
+              },
+            ),
+          ),
+          SizedBox(height: 2.h),
+
+          // Job Subcategories - Multi-Select Dropdown
+          Obx(
+            () => controller.jobSubcategories.isNotEmpty
+                ? Column(
+                    children: [
+                      DropdownSearch<Map<String, dynamic>>.multiSelection(
+                        items: (filter, _) =>
+                            controller.jobSubcategories.toList(),
+                        selectedItems: controller.jobSubcategories
+                            .where(
+                              (sub) => controller.selectedJobSubcategoryIds
+                                  .contains(sub['id']),
+                            )
+                            .toList(),
+                        itemAsString: (item) => item['subcategory_name'] ?? '',
+                        compareFn: (a, b) => a['id'] == b['id'],
+                        decoratorProps: const DropDownDecoratorProps(
                           decoration: InputDecoration(
-                            hintText: 'Search subcategories...',
-                            prefixIcon: Icon(Icons.search),
+                            labelText: 'Job Subcategories',
+                            prefixIcon: Icon(Icons.category_outlined),
+                            hintText: 'Select multiple subcategories',
                           ),
                         ),
+                        popupProps: PopupPropsMultiSelection.menu(
+                          showSearchBox: true,
+                          searchFieldProps: const TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: 'Search subcategories...',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                          ),
+                        ),
+                        onChanged: (items) {
+                          controller.selectedJobSubcategoryIds.value = items
+                              .map((item) => item['id'] as int)
+                              .toList();
+                        },
                       ),
-                      onChanged: (items) {
-                        controller.selectedJobSubcategoryIds.value = items
-                            .map((item) => item['id'] as int)
-                            .toList();
-                      },
-                    ),
-                    SizedBox(height: 2.h),
-                  ],
-                )
-              : const SizedBox.shrink(),
-        ),
+                      SizedBox(height: 2.h),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+          ),
 
-        TextFormField(
-          controller: controller.jobDesignationController,
-          decoration: const InputDecoration(
-            labelText: 'Designation',
-            prefixIcon: Icon(Icons.badge),
-          ),
-        ),
-        SizedBox(height: 2.h),
-        TextFormField(
-          controller: controller.jobDepartmentController,
-          decoration: const InputDecoration(
-            labelText: 'Department',
-            prefixIcon: Icon(Icons.work),
-          ),
-        ),
-        SizedBox(height: 2.h),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: controller.jobExperienceController,
-                decoration: const InputDecoration(
-                  labelText: 'Exp (Years)',
-                  prefixIcon: Icon(Icons.timeline),
-                ),
-                keyboardType: TextInputType.number,
-              ),
+          TextFormField(
+            controller: controller.jobDesignationController,
+            decoration: const InputDecoration(
+              labelText: 'Designation',
+              prefixIcon: Icon(Icons.badge),
             ),
-            SizedBox(width: 4.w),
-            Expanded(
-              child: Obx(
-                () => InkWell(
-                  onTap: () => controller.selectJobJoinDate(context),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Join Date',
-                      prefixIcon: Icon(Icons.calendar_today),
-                    ),
-                    child: Text(
-                      controller.jobJoinDate.value != null
-                          ? DateFormat(
-                              'dd/MM/yyyy',
-                            ).format(controller.jobJoinDate.value!)
-                          : 'Select date',
-                      style: TextStyle(
-                        color: controller.jobJoinDate.value != null
-                            ? AppTheme.textPrimary
-                            : AppTheme.textLight,
+          ),
+          SizedBox(height: 2.h),
+          TextFormField(
+            controller: controller.jobDepartmentController,
+            decoration: const InputDecoration(
+              labelText: 'Department',
+              prefixIcon: Icon(Icons.work),
+            ),
+          ),
+          SizedBox(height: 2.h),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controller.jobExperienceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Exp (Years)',
+                    prefixIcon: Icon(Icons.timeline),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              SizedBox(width: 4.w),
+              Expanded(
+                child: Obx(
+                  () => InkWell(
+                    onTap: () => controller.selectJobJoinDate(context),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Join Date',
+                        prefixIcon: Icon(Icons.calendar_today),
+                      ),
+                      child: Text(
+                        controller.jobJoinDate.value != null
+                            ? DateFormat(
+                                'dd/MM/yyyy',
+                              ).format(controller.jobJoinDate.value!)
+                            : 'Select date',
+                        style: TextStyle(
+                          color: controller.jobJoinDate.value != null
+                              ? AppTheme.textPrimary
+                              : AppTheme.textLight,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -811,9 +1033,10 @@ class EditProfileView extends GetView<EditProfileController> {
                   TextFormField(
                     controller: form.nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Business Name',
+                      labelText: 'Business Name *',
                       prefixIcon: Icon(Icons.store),
                     ),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                   ),
                   SizedBox(height: 2.h),
 
@@ -843,6 +1066,11 @@ class EditProfileView extends GetView<EditProfileController> {
                       ),
                       onChanged: (item) {
                         form.selectedTypeId.value = item?['id'];
+                      },
+                      validator: (v) => v == null ? 'Required' : null,
+                      onBeforePopupOpening: (selectedItem) async {
+                        FocusScope.of(context).unfocus();
+                        return true;
                       },
                     ),
                   ),
@@ -880,6 +1108,11 @@ class EditProfileView extends GetView<EditProfileController> {
                           // Reset subcategories when category changes
                           form.selectedSubcategoryIds.clear();
                         }
+                      },
+                      validator: (v) => v == null ? 'Required' : null,
+                      onBeforePopupOpening: (selectedItem) async {
+                        FocusScope.of(context).unfocus();
+                        return true;
                       },
                     ),
                   ),
@@ -941,6 +1174,10 @@ class EditProfileView extends GetView<EditProfileController> {
                                 .map((i) => i['id'] as int)
                                 .toList();
                           },
+                          onBeforePopupOpening: (selectedItems) async {
+                            FocusScope.of(context).unfocus();
+                            return true;
+                          },
                         );
                       },
                     );
@@ -959,10 +1196,11 @@ class EditProfileView extends GetView<EditProfileController> {
                   TextFormField(
                     controller: form.addressController,
                     decoration: const InputDecoration(
-                      labelText: 'Business Address',
+                      labelText: 'Business Address *',
                       prefixIcon: Icon(Icons.place),
                     ),
                     maxLines: 2,
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
                   ),
                   SizedBox(height: 2.h),
 

@@ -70,6 +70,7 @@ class RegisterController extends GetxController {
   final RxBool isCheckingEmail = false.obs;
   final RxBool isCheckingPhone = false.obs;
   final RxString errorMessage = ''.obs;
+  final RxDouble uploadProgress = 0.0.obs;
 
   // Step 1: Personal Information
   final fullNameController = TextEditingController();
@@ -471,12 +472,6 @@ class RegisterController extends GetxController {
             if (!isValid) {
               return; // Form validation will show red borders on invalid fields
             }
-
-            // Check subcategories separately (multi-select doesn't have form validator)
-            if (selectedJobSubcategoryIds.isEmpty) {
-              _showError('Please select at least one job subcategory');
-              return;
-            }
           } else {
             isValid = true; // Not working, so details optional
           }
@@ -562,219 +557,295 @@ class RegisterController extends GetxController {
   }
 
   Future<void> _submitRegistration() async {
+    // Show progress dialog
+    Get.dialog(
+      PopScope(
+        canPop: false,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                const Text(
+                  'Creating Account...',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 10),
+                Obx(() {
+                  final progress = uploadProgress.value;
+                  if (progress > 0 && progress < 1.0) {
+                    return Column(
+                      children: [
+                        LinearProgressIndicator(value: progress),
+                        const SizedBox(height: 10),
+                        Text(
+                          '${(progress * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                  return Text(
+                    'Please wait while we set up your profile.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
     isLoading.value = true;
     errorMessage.value = '';
 
-    final stateName =
-        states.firstWhereOrNull(
-          (s) => s['code'] == selectedStateCode.value,
-        )?['name'] ??
-        selectedStateCode.value;
-    final countryName =
-        countries.firstWhereOrNull(
-          (c) => c['code'] == selectedCountryCode.value,
-        )?['name'] ??
-        'India';
+    try {
+      final stateName =
+          states.firstWhereOrNull(
+            (s) => s['code'] == selectedStateCode.value,
+          )?['name'] ??
+          selectedStateCode.value;
+      final countryName =
+          countries.firstWhereOrNull(
+            (c) => c['code'] == selectedCountryCode.value,
+          )?['name'] ??
+          'India';
 
-    final data = {
-      'full_name': fullNameController.text.trim(),
-      'surname': surnameController.text.trim(),
-      'email': emailController.text.trim(),
-      'phone': '${phoneCountryCode.value}${phoneController.text.trim()}',
-      'phone_country_code': phoneCountryCode.value,
-      'password': passwordController.text,
-      'gender': gender.value,
-      'date_of_birth': dateOfBirth.value?.toIso8601String().split('T')[0],
-      'blood_group': bloodGroup.value.isNotEmpty ? bloodGroup.value : null,
-      'native_village_id': selectedVillageId.value,
-      'living_address': addressController.text.trim(),
-      'living_city': selectedCityName.value,
-      'living_state': stateName,
-      'living_country': countryName,
-      'living_zipcode': zipcodeController.text.trim(),
-      'user_type': userType.value,
-      // Include FCM token for push notifications
-      if (Get.isRegistered<NotificationService>())
-        'fcm_token': Get.find<NotificationService>().fcmToken.value,
-      // Education (optional)
-      if (qualificationController.text.isNotEmpty)
-        'education': {
-          'education_type': educationType.value,
-          'qualification': qualificationController.text.trim(),
-          'institution': institutionController.text.trim(),
-          'field_of_study': fieldOfStudyController.text.trim(),
-          if (startYearController.text.isNotEmpty)
-            'start_year': int.tryParse(startYearController.text.trim()),
-          if (passingYearController.text.isNotEmpty &&
-              !isCurrentlyStudying.value)
-            'passing_year': int.tryParse(passingYearController.text.trim()),
-          if (currentYearController.text.isNotEmpty &&
-              isCurrentlyStudying.value)
-            'current_year': int.tryParse(currentYearController.text.trim()),
-          'is_currently_studying': isCurrentlyStudying.value,
-          if (gradeController.text.isNotEmpty && !isCurrentlyStudying.value)
-            'grade': gradeController.text.trim(),
-        },
-      // Business details (if user_type == business)
-      if (userType.value == 'business')
-        'businesses': businessForms
-            .map(
-              (form) => {
-                'business_name': form.nameController.text.trim(),
-                if (form.emailController.text.trim().isNotEmpty)
-                  'business_email': form.emailController.text.trim(),
-                if (form.phoneController.text.trim().isNotEmpty)
-                  'business_phone':
-                      '${form.phoneCountryCode.value}${form.phoneController.text.trim()}',
-                if (form.addressController.text.trim().isNotEmpty)
-                  'business_address': form.addressController.text.trim(),
-                if (form.descriptionController.text.trim().isNotEmpty)
-                  'business_description': form.descriptionController.text
-                      .trim(),
-                if (form.yearOfEstablishmentController.text.trim().isNotEmpty)
-                  'year_of_establishment': int.tryParse(
-                    form.yearOfEstablishmentController.text.trim(),
-                  ),
-                if (form.gstNumberController.text.trim().isNotEmpty)
-                  'gst_number': form.gstNumberController.text.trim(),
-                if (form.websiteUrlController.text.trim().isNotEmpty)
-                  'website_url': form.websiteUrlController.text.trim(),
-                if (form.numberOfEmployeesController.text.trim().isNotEmpty)
-                  'number_of_employees': int.tryParse(
-                    form.numberOfEmployeesController.text.trim(),
-                  ),
-                if (form.annualTurnoverController.text.trim().isNotEmpty)
-                  'annual_turnover': double.tryParse(
-                    form.annualTurnoverController.text.trim(),
-                  ),
-                if (form.selectedTypeId.value != null)
-                  'business_type_id': form.selectedTypeId.value,
-                if (form.selectedCategoryId.value != null)
-                  'business_category_id': form.selectedCategoryId.value,
-                if (form.selectedSubcategoryIds.isNotEmpty)
-                  'business_subcategory_ids': form.selectedSubcategoryIds
-                      .toList(),
-              },
-            )
-            .toList(),
-      // Job details (if user_type == job)
-      if (userType.value == 'job')
-        'job': {
-          'is_current': isCurrentlyWorking.value,
-          if (isCurrentlyWorking.value &&
-              companyNameController.text.trim().isNotEmpty)
-            'company_name': companyNameController.text.trim(),
-          if (isCurrentlyWorking.value &&
-              designationController.text.trim().isNotEmpty)
-            'designation': designationController.text.trim(),
-          if (isCurrentlyWorking.value &&
-              departmentController.text.trim().isNotEmpty)
-            'department': departmentController.text.trim(),
-          if (isCurrentlyWorking.value &&
-              experienceController.text.trim().isNotEmpty)
-            'years_of_experience': experienceController.text.trim(),
-          if (isCurrentlyWorking.value && dateOfJoining.value != null)
-            'date_of_joining': dateOfJoining.value!.toIso8601String().split(
-              'T',
-            )[0],
-          if (isCurrentlyWorking.value && selectedJobTypeId.value != null)
-            'job_type_id': selectedJobTypeId.value,
-          if (isCurrentlyWorking.value && selectedJobCategoryId.value != null)
-            'job_category_id': selectedJobCategoryId.value,
-          if (isCurrentlyWorking.value && selectedJobSubcategoryIds.isNotEmpty)
-            'job_subcategory_ids': selectedJobSubcategoryIds.toList(),
-        },
-    };
-
-    // Debug: print the data being sent
-    debugPrint('Register data: $data');
-
-    // Handle file upload if business logo OR profile image is present
-    Map<String, dynamic> result;
-
-    // Check if any business has a logo
-    List<File> businessLogos = [];
-    List<int> businessLogoIndices = [];
-    for (int i = 0; i < businessForms.length; i++) {
-      if (businessForms[i].logo.value != null) {
-        businessLogos.add(businessForms[i].logo.value!);
-        businessLogoIndices.add(i);
-      }
-    }
-
-    if (businessLogos.isNotEmpty || profileImage.value != null) {
-      // Create FormData
-      final Map<String, dynamic> formMap = {
-        ...data,
-        // For businesses, we need to handle multiple forms
-        if (data.containsKey('businesses'))
-          'businesses': jsonEncode(data['businesses']),
-        // Send indices for logos
-        if (businessLogos.isNotEmpty)
-          'business_logo_indices': jsonEncode(businessLogoIndices),
+      final data = {
+        'full_name': fullNameController.text.trim(),
+        'surname': surnameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': '${phoneCountryCode.value}${phoneController.text.trim()}',
+        'phone_country_code': phoneCountryCode.value,
+        'password': passwordController.text,
+        'gender': gender.value,
+        'date_of_birth': dateOfBirth.value?.toIso8601String().split('T')[0],
+        'blood_group': bloodGroup.value.isNotEmpty ? bloodGroup.value : null,
+        'native_village_id': selectedVillageId.value,
+        'living_address': addressController.text.trim(),
+        'living_city': selectedCityName.value,
+        'living_state': stateName,
+        'living_country': countryName,
+        'living_zipcode': zipcodeController.text.trim(),
+        'user_type': userType.value,
+        // Include FCM token for push notifications
+        if (Get.isRegistered<NotificationService>())
+          'fcm_token': Get.find<NotificationService>().fcmToken.value,
+        // Education (optional)
+        if (qualificationController.text.isNotEmpty)
+          'education': {
+            'education_type': educationType.value,
+            'qualification': qualificationController.text.trim(),
+            'institution': institutionController.text.trim(),
+            'field_of_study': fieldOfStudyController.text.trim(),
+            if (startYearController.text.isNotEmpty)
+              'start_year': int.tryParse(startYearController.text.trim()),
+            if (passingYearController.text.isNotEmpty &&
+                !isCurrentlyStudying.value)
+              'passing_year': int.tryParse(passingYearController.text.trim()),
+            if (currentYearController.text.isNotEmpty &&
+                isCurrentlyStudying.value)
+              'current_year': int.tryParse(currentYearController.text.trim()),
+            'is_currently_studying': isCurrentlyStudying.value,
+            if (gradeController.text.isNotEmpty && !isCurrentlyStudying.value)
+              'grade': gradeController.text.trim(),
+          },
+        // Business details (if user_type == business)
+        if (userType.value == 'business')
+          'businesses': businessForms
+              .map(
+                (form) => {
+                  'business_name': form.nameController.text.trim(),
+                  if (form.emailController.text.trim().isNotEmpty)
+                    'business_email': form.emailController.text.trim(),
+                  if (form.phoneController.text.trim().isNotEmpty)
+                    'business_phone':
+                        '${form.phoneCountryCode.value}${form.phoneController.text.trim()}',
+                  if (form.addressController.text.trim().isNotEmpty)
+                    'business_address': form.addressController.text.trim(),
+                  if (form.descriptionController.text.trim().isNotEmpty)
+                    'business_description': form.descriptionController.text
+                        .trim(),
+                  if (form.yearOfEstablishmentController.text.trim().isNotEmpty)
+                    'year_of_establishment': int.tryParse(
+                      form.yearOfEstablishmentController.text.trim(),
+                    ),
+                  if (form.gstNumberController.text.trim().isNotEmpty)
+                    'gst_number': form.gstNumberController.text.trim(),
+                  if (form.websiteUrlController.text.trim().isNotEmpty)
+                    'website_url': form.websiteUrlController.text.trim(),
+                  if (form.numberOfEmployeesController.text.trim().isNotEmpty)
+                    'number_of_employees': int.tryParse(
+                      form.numberOfEmployeesController.text.trim(),
+                    ),
+                  if (form.annualTurnoverController.text.trim().isNotEmpty)
+                    'annual_turnover': double.tryParse(
+                      form.annualTurnoverController.text.trim(),
+                    ),
+                  if (form.selectedTypeId.value != null)
+                    'business_type_id': form.selectedTypeId.value,
+                  if (form.selectedCategoryId.value != null)
+                    'business_category_id': form.selectedCategoryId.value,
+                  if (form.selectedSubcategoryIds.isNotEmpty)
+                    'business_subcategory_ids': form.selectedSubcategoryIds
+                        .toList(),
+                },
+              )
+              .toList(),
+        // Job details (if user_type == job)
+        if (userType.value == 'job')
+          'job': {
+            'is_current': isCurrentlyWorking.value,
+            if (isCurrentlyWorking.value &&
+                companyNameController.text.trim().isNotEmpty)
+              'company_name': companyNameController.text.trim(),
+            if (isCurrentlyWorking.value &&
+                designationController.text.trim().isNotEmpty)
+              'designation': designationController.text.trim(),
+            if (isCurrentlyWorking.value &&
+                departmentController.text.trim().isNotEmpty)
+              'department': departmentController.text.trim(),
+            if (isCurrentlyWorking.value &&
+                experienceController.text.trim().isNotEmpty)
+              'years_of_experience': experienceController.text.trim(),
+            if (isCurrentlyWorking.value && dateOfJoining.value != null)
+              'date_of_joining': dateOfJoining.value!.toIso8601String().split(
+                'T',
+              )[0],
+            if (isCurrentlyWorking.value && selectedJobTypeId.value != null)
+              'job_type_id': selectedJobTypeId.value,
+            if (isCurrentlyWorking.value && selectedJobCategoryId.value != null)
+              'job_category_id': selectedJobCategoryId.value,
+            if (isCurrentlyWorking.value &&
+                selectedJobSubcategoryIds.isNotEmpty)
+              'job_subcategory_ids': selectedJobSubcategoryIds.toList(),
+          },
       };
 
-      final formData = FormData.fromMap(formMap);
+      // Debug: print the data being sent
+      debugPrint('Register data: $data');
 
-      if (profileImage.value != null) {
-        formData.files.add(
-          MapEntry(
-            'profile_picture',
-            await MultipartFile.fromFile(
-              profileImage.value!.path,
-              filename: profileImage.value!.path.split('/').last,
-            ),
-          ),
-        );
+      // Handle file upload if business logo OR profile image is present
+      Map<String, dynamic> result;
+
+      // Check if any business has a logo
+      List<File> businessLogos = [];
+      List<int> businessLogoIndices = [];
+      for (int i = 0; i < businessForms.length; i++) {
+        if (businessForms[i].logo.value != null) {
+          businessLogos.add(businessForms[i].logo.value!);
+          businessLogoIndices.add(i);
+        }
       }
 
-      if (businessLogos.isNotEmpty) {
-        for (var file in businessLogos) {
+      if (businessLogos.isNotEmpty || profileImage.value != null) {
+        // Create FormData
+        final Map<String, dynamic> formMap = {
+          ...data,
+          // For businesses, we need to handle multiple forms
+          if (data.containsKey('businesses'))
+            'businesses': jsonEncode(data['businesses']),
+          if (data.containsKey('job')) 'job': jsonEncode(data['job']),
+          if (data.containsKey('education'))
+            'education': jsonEncode(data['education']),
+          // Send indices for logos
+          if (businessLogos.isNotEmpty)
+            'business_logo_indices': jsonEncode(businessLogoIndices),
+        };
+
+        final formData = FormData.fromMap(formMap);
+
+        if (profileImage.value != null) {
           formData.files.add(
             MapEntry(
-              'business_logo',
+              'profile_picture',
               await MultipartFile.fromFile(
-                file.path,
-                filename: file.path.split('/').last,
+                profileImage.value!.path,
+                filename: profileImage.value!.path.split('/').last,
               ),
             ),
           );
         }
-      }
 
-      result = await _authService.registerWithFile(formData);
-    } else {
-      // JSON submission
-      result = await _authService.register(data);
-    }
-
-    isLoading.value = false;
-
-    if (result['success']) {
-      // Save user data to storage so PendingApprovalController can access village_id
-      if (result['data'] != null) {
-        Get.find<StorageService>().user = result['data'];
-      }
-
-      // Upload FCM token after successful registration
-      try {
-        if (Get.isRegistered<NotificationService>()) {
-          final notificationService = Get.find<NotificationService>();
-          await notificationService.uploadTokenToServer();
+        if (businessLogos.isNotEmpty) {
+          for (var file in businessLogos) {
+            formData.files.add(
+              MapEntry(
+                'business_logo',
+                await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                ),
+              ),
+            );
+          }
         }
-      } catch (e) {
-        debugPrint('Failed to upload FCM token after registration: $e');
+
+        uploadProgress.value = 0.0;
+        result = await _authService.registerWithFile(
+          formData,
+          onSendProgress: (sent, total) {
+            if (total != -1) {
+              uploadProgress.value = sent / total;
+            }
+          },
+        );
+      } else {
+        // JSON submission
+        result = await _authService.register(data);
       }
 
-      Get.offAllNamed(Routes.PENDING_APPROVAL);
-      Get.snackbar(
-        'Success',
-        'Registration successful. Please wait for approval.',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    } else {
-      _showError(result['message'] ?? 'Registration failed');
+      isLoading.value = false;
+
+      // Close dialog
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+
+      if (result['success']) {
+        // Save user data to storage so PendingApprovalController can access village_id
+        if (result['data'] != null) {
+          Get.find<StorageService>().user = result['data'];
+        }
+
+        // Upload FCM token after successful registration
+        try {
+          if (Get.isRegistered<NotificationService>()) {
+            final notificationService = Get.find<NotificationService>();
+            await notificationService.uploadTokenToServer();
+          }
+        } catch (e) {
+          debugPrint('Failed to upload FCM token after registration: $e');
+        }
+
+        Get.offAllNamed(Routes.PENDING_APPROVAL);
+        Get.snackbar(
+          'Success',
+          'Registration successful. Please wait for approval.',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        _showError(result['message'] ?? 'Registration failed');
+      }
+    } catch (e) {
+      isLoading.value = false;
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      _showError('An unexpected error occurred: $e');
     }
   }
 

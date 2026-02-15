@@ -107,6 +107,8 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     _socketService.socket.off('message_read');
     _socketService.socket.off('message_deleted');
     _socketService.socket.off('message_edited');
+    _socketService.socket.off('new_message_notification');
+    _socketService.socket.off('error');
 
     _socketService.socket.on('receive_message', (data) {
       if (data['conversation_id'].toString() == currentConversationId) {
@@ -138,6 +140,29 @@ class ChatController extends GetxController with WidgetsBindingObserver {
         // Message for another conversation - refresh conversations and unread count
         loadConversations();
         loadUnreadCount();
+      }
+    });
+
+    // Global notification for messages when user is NOT in the specific chat room
+    _socketService.socket.on('new_message_notification', (data) {
+      // If we are already in the conversation, 'receive_message' handles it.
+      // If not, we need to refresh the list and badge.
+      if (data['conversation_id'].toString() != currentConversationId) {
+        loadConversations();
+        loadUnreadCount();
+
+        // Optional: Show in-app snackbar if needed
+        /*
+        Get.snackbar(
+          'New Message',
+          data['message']['content'] ?? 'You have a new message',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.white,
+          onTap: (_) {
+            // Navigate to chat
+          }
+        );
+        */
       }
     });
 
@@ -198,7 +223,7 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     });
 
     _socketService.socket.on('error', (err) {
-      // silent
+      debugPrint('Socket error: $err');
     });
   }
 
@@ -372,14 +397,31 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     messages.insert(0, tempMessage);
     messageController.clear();
 
-    _socketService.socket.emit('send_message', {
-      'conversationId': currentConversationId,
-      'content': content.isNotEmpty ? content : '📎 Attachment',
-      'receiverId': currentReceiverId,
-      'uuid': uuid,
-      if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
-      if (attachmentName != null) 'attachmentName': attachmentName,
-    });
+    _socketService.socket.emitWithAck(
+      'send_message',
+      {
+        'conversationId': currentConversationId,
+        'content': content.isNotEmpty ? content : '📎 Attachment',
+        'receiverId': currentReceiverId,
+        'uuid': uuid,
+        if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
+        if (attachmentName != null) 'attachmentName': attachmentName,
+      },
+      ack: (data) {
+        if (data != null && data['status'] == 'ok') {
+          // Message sent successfully
+          // We can update the message status from 'is_local' to 'sent' if we had such a field
+        } else {
+          // Message failed
+          // We should show visual feedback
+          Get.snackbar(
+            'Error',
+            'Failed to send message',
+            snackPosition: SnackPosition.TOP,
+          );
+        }
+      },
+    );
 
     if (scrollController.hasClients) {
       scrollController.animateTo(

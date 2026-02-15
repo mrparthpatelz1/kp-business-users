@@ -109,20 +109,30 @@ class ApiProvider extends GetxService {
   }
 
   // POST with FormData (for file uploads)
-  Future<Response> postFormData(String path, FormData formData) async {
+  Future<Response> postFormData(
+    String path,
+    FormData formData, {
+    ProgressCallback? onSendProgress,
+  }) async {
     return await _dio.post(
       path,
       data: formData,
       options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      onSendProgress: onSendProgress,
     );
   }
 
   // PUT with FormData
-  Future<Response> putFormData(String path, FormData formData) async {
+  Future<Response> putFormData(
+    String path,
+    FormData formData, {
+    ProgressCallback? onSendProgress,
+  }) async {
     return await _dio.put(
       path,
       data: formData,
       options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      onSendProgress: onSendProgress,
     );
   }
 
@@ -142,6 +152,7 @@ class ApiProvider extends GetxService {
     String filePath, {
     Map<String, dynamic>? data,
     String fieldName = 'image',
+    ProgressCallback? onSendProgress,
   }) async {
     final Map<String, dynamic> formMap = {};
     // Add all data fields
@@ -156,6 +167,7 @@ class ApiProvider extends GetxService {
       path,
       data: formData,
       options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      onSendProgress: onSendProgress,
     );
   }
 

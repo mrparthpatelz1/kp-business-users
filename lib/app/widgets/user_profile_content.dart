@@ -156,13 +156,40 @@ class UserProfileContent extends StatelessWidget {
       }
     }
 
+    Widget? workContent;
+    if (userType == 'business') {
+      workContent = _buildBusinessInfo(user);
+    } else if (subtitle.isNotEmpty) {
+      workContent = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            subtitle,
+            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+          ),
+          if (subSubtitle.isNotEmpty)
+            Text(
+              subSubtitle,
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+        ],
+      );
+    }
+
     return Card(
       elevation: 3,
       clipBehavior: Clip.hardEdge,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
-          Get.toNamed(Routes.FULL_PROFILE, arguments: user);
+          Get.toNamed(
+            Routes.FULL_PROFILE,
+            arguments: {...user, 'isOwnProfile': isOwnProfile},
+          );
         },
         child: Stack(
           children: [
@@ -224,26 +251,10 @@ class UserProfileContent extends StatelessWidget {
                         SizedBox(height: 1.h),
                         Divider(height: 1.5.h),
                         // Role/Work Info
-                        if (subtitle.isNotEmpty)
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        if (subSubtitle.isNotEmpty)
-                          Text(
-                            subSubtitle,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
+                        if (workContent != null) workContent,
+
                         // Add some space at bottom for the button
-                        if (subtitle.isNotEmpty || subSubtitle.isNotEmpty)
-                          SizedBox(height: 3.h),
+                        if (workContent != null) SizedBox(height: 3.h),
                       ],
                     ),
                   ),
@@ -292,7 +303,10 @@ class UserProfileContent extends StatelessWidget {
                     SizedBox(width: 2.w),
                   TextButton(
                     onPressed: () {
-                      Get.toNamed(Routes.FULL_PROFILE, arguments: user);
+                      Get.toNamed(
+                        Routes.FULL_PROFILE,
+                        arguments: {...user, 'isOwnProfile': isOwnProfile},
+                      );
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.symmetric(
@@ -465,6 +479,68 @@ class UserProfileContent extends StatelessWidget {
   }
 
   // --- Reused Section Builders ---
+}
+
+// --- Business List Builder ---
+Widget _buildBusinessInfo(Map<String, dynamic> user) {
+  final businessesRaw = user['businesses'] as List?;
+  if (businessesRaw == null || businessesRaw.isEmpty) {
+    return Text(
+      'Business Owner',
+      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+    );
+  }
+
+  final businesses = businessesRaw.where((b) => b != null).toList();
+  if (businesses.isEmpty) {
+    return Text(
+      'Business Owner',
+      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+    );
+  }
+
+  final displayList = businesses.take(2).toList();
+  final remaining = businesses.length - 2;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ...displayList.map(
+        (b) => Padding(
+          padding: EdgeInsets.only(bottom: 0.5.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                b['business_name'] ?? 'Business',
+                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                b['category']?['name'] ?? b['category_name'] ?? '',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      if (remaining > 0)
+        Padding(
+          padding: EdgeInsets.only(top: 0.5.h),
+          child: Text(
+            '+ $remaining more',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+    ],
+  );
 }
 
 class _ChangePasswordWidget extends StatefulWidget {

@@ -4,15 +4,44 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
+import 'profile_controller.dart';
 
 class FullProfileView extends StatelessWidget {
   const FullProfileView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> user = Get.arguments ?? {};
+    // Try to get data from arguments first, if not available/updated, check controller
+    // Actually, to support updates, we should prefer the controller's current user state
+    // if we are viewing "my" profile.
+
+    // Check if we are viewing our own profile or someone else's.
+    // If arguments has 'isOwnProfile' or similar, or we can check ID.
+
+    final Map<String, dynamic> args = Get.arguments ?? {};
+    final bool isOwnProfile = args['isOwnProfile'] == true;
+
+    // If it's own profile, listen to ProfileController
+    if (isOwnProfile && Get.isRegistered<ProfileController>()) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Full Profile Details')),
+        body: GetX<ProfileController>(
+          builder: (controller) {
+            final user =
+                controller.profile.value ?? controller.currentUser ?? {};
+            if (user.isEmpty) return const Center(child: Text('No data'));
+            final address = user['address'];
+            return SingleChildScrollView(
+              padding: EdgeInsets.all(4.w),
+              child: Column(children: [_buildFullDetails(user, address)]),
+            );
+          },
+        ),
+      );
+    }
+
+    final Map<String, dynamic> user = args;
     final address = user['address'];
-    // Logic adapted from UserProfileContent
 
     return Scaffold(
       appBar: AppBar(title: const Text('Full Profile Details')),
@@ -146,93 +175,139 @@ class FullProfileView extends StatelessWidget {
   Widget _buildEducationDetails(List<dynamic> educationList) {
     if (educationList.isEmpty) return const SizedBox.shrink();
 
+    // Debug print to see what we get
+    // print('FullProfileView Education: $educationList');
+
     return _buildSection(
       'Education',
       Icons.school,
-      educationList
-          .map(
-            (edu) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoRow(
-                  'Degree',
-                  edu['degree_name'] ?? edu['qualification'] ?? 'N/A',
-                ),
-                _buildInfoRow(
-                  'Institution',
-                  edu['school_university'] ?? edu['institution'] ?? 'N/A',
-                ),
-                _buildInfoRow('Field of Study', edu['field_of_study'] ?? 'N/A'),
-                _buildInfoRow(
-                  'Start Year',
-                  edu['start_year']?.toString() ?? 'N/A',
-                ),
-                _buildInfoRow(
-                  'End Year',
-                  edu['end_year']?.toString() ??
-                      edu['passing_year']?.toString() ??
-                      'N/A',
-                ),
-                _buildInfoRow(
-                  'Grade',
-                  edu['grade_percentage']?.toString() ??
-                      edu['grade']?.toString() ??
-                      'N/A',
-                ),
-                if (educationList.indexOf(edu) < educationList.length - 1)
-                  Divider(height: 2.h),
-              ],
+      educationList.map((edu) {
+        final educationType = (edu['education_type'] ?? 'school')
+            .toString()
+            .toLowerCase();
+        final isCollege = educationType == 'college';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow(
+              isCollege ? 'Degree' : 'Class/Standard',
+              edu['degree_name'] ?? edu['qualification'] ?? 'N/A',
             ),
-          )
-          .toList(),
+            _buildInfoRow(
+              isCollege ? 'College/University' : 'School',
+              edu['school_university'] ?? edu['institution'] ?? 'N/A',
+            ),
+            // Only show field of study/stream for college
+            if (isCollege)
+              _buildInfoRow('Stream/Branch', edu['field_of_study'] ?? 'N/A'),
+
+            _buildInfoRow('Start Year', edu['start_year']?.toString() ?? 'N/A'),
+
+            // Handle currently studying logic if needed, but for now just show end/passing year
+            _buildInfoRow(
+              (edu['is_currently_studying'] == true ||
+                      edu['is_currently_studying'] == 1)
+                  ? 'Expected End Year'
+                  : 'Passing Year',
+              edu['end_year']?.toString() ??
+                  edu['passing_year']?.toString() ??
+                  'N/A',
+            ),
+            _buildInfoRow(
+              'Grade/Percentage',
+              edu['grade_percentage']?.toString() ??
+                  edu['grade']?.toString() ??
+                  'N/A',
+            ),
+            if (educationList.indexOf(edu) < educationList.length - 1)
+              Divider(height: 2.h),
+          ],
+        );
+      }).toList(),
     );
   }
 
   Widget _buildBusinessDetails(List<dynamic> businessList) {
     if (businessList.isEmpty) return const SizedBox.shrink();
 
-    final List<Widget> widgets = [];
-    for (var business in businessList) {
-      widgets.addAll([
-        if (business['logo'] != null)
-          Center(
-            child: CircleAvatar(
-              radius: 40,
-              backgroundImage: NetworkImage(
-                ApiConstants.getFullUrl(business['logo']),
+    return Column(
+      children: businessList.where((b) => b != null).map((business) {
+        final List<Widget> details = [];
+
+        // Logo
+        if (business['logo'] != null) {
+          details.add(
+            Center(
+              child: Container(
+                margin: EdgeInsets.only(bottom: 2.h),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    ApiConstants.getFullUrl(business['logo']),
+                    height: 15.h,
+                    width: 15.h,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        SizedBox(height: 1.h),
-        _buildInfoRow('Business Name', business['business_name'] ?? 'N/A'),
-        _buildInfoRow(
-          'Type',
-          business['type']?['name'] ?? business['type_name'] ?? 'N/A',
-        ),
-        _buildInfoRow(
-          'Category',
-          business['category']?['name'] ?? business['category_name'] ?? 'N/A',
-        ),
-        _buildSubcategoriesInfo(business['subcategories']),
-        _buildInfoRow('Description', business['description'] ?? 'N/A'),
-        _buildInfoRow(
-          'Year Established',
-          business['year_of_establishment']?.toString() ?? 'N/A',
-        ),
-        _buildInfoRow('GST Number', business['gst_number'] ?? 'N/A'),
-        _buildInfoRow('Website', business['website_url'] ?? 'N/A'),
-        _buildInfoRow('Phone', business['business_phone'] ?? 'N/A'),
-        _buildInfoRow('Email', business['business_email'] ?? 'N/A'),
-        _buildInfoRow(
-          'Employees',
-          business['number_of_employees']?.toString() ?? 'N/A',
-        ),
-        if (businessList.indexOf(business) < businessList.length - 1)
-          Divider(height: 2.h),
-      ]);
-    }
+          );
+        }
 
-    return _buildSection('Business', Icons.business, widgets);
+        // Add all details
+        details.addAll([
+          _buildInfoRow(
+            'Type',
+            business['type']?['name'] ?? business['type_name'] ?? 'N/A',
+          ),
+          _buildInfoRow(
+            'Category',
+            business['category']?['name'] ?? business['category_name'] ?? 'N/A',
+          ),
+          _buildSubcategoriesInfo(business['subcategories']),
+          if (business['description'] != null &&
+              business['description'].toString().isNotEmpty)
+            _buildInfoRow('Description', business['description']),
+          _buildInfoRow(
+            'Address',
+            business['address'] ?? business['business_address'] ?? 'N/A',
+          ),
+          _buildInfoRow(
+            'Year Established',
+            business['year_of_establishment']?.toString() ?? 'N/A',
+          ),
+          if (business['gst_number'] != null)
+            _buildInfoRow('GST Number', business['gst_number']),
+          if (business['website_url'] != null)
+            _buildInfoRow('Website', business['website_url']),
+          if (business['business_phone'] != null)
+            _buildInfoRow('Phone', business['business_phone']),
+          if (business['business_email'] != null)
+            _buildInfoRow('Email', business['business_email']),
+          if (business['number_of_employees'] != null)
+            _buildInfoRow(
+              'Employees',
+              business['number_of_employees']?.toString() ?? 'N/A',
+            ),
+        ]);
+
+        return _buildSection(
+          business['business_name'] ?? 'Business',
+          Icons.store,
+          details,
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildSubcategoriesInfo(dynamic subcategories) {

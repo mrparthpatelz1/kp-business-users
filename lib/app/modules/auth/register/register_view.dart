@@ -12,39 +12,58 @@ class RegisterView extends GetView<RegisterController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Account'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
-        ),
-      ),
-      body: Column(
-        children: [
-          // Progress indicator
-          Obx(() => _buildProgressIndicator()),
-
-          // Form pages
-          Expanded(
-            child: PageView(
-              controller: controller.pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStep1PersonalInfo(context),
-                _buildStep2AddressInfo(context),
-                _buildStep3UserType(context),
-                _buildStep4Education(context),
-                _buildStep5Details(context),
-              ],
+    return Obx(() {
+      final canPop = controller.currentStep.value == 0;
+      return PopScope(
+        canPop: canPop,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          controller.previousStep();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Create Account'),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: _handleBack,
             ),
           ),
+          body: Column(
+            children: [
+              // Progress indicator
+              _buildProgressIndicator(),
 
-          // Navigation buttons
-          _buildNavigationButtons(context),
-        ],
-      ),
-    );
+              // Form pages
+              Expanded(
+                child: PageView(
+                  controller: controller.pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildStep1PersonalInfo(context),
+                    _buildStep2AddressInfo(context),
+                    _buildStep3UserType(context),
+                    _buildStep4Education(context),
+                    _buildStep5Details(context),
+                    const SizedBox(height: 150),
+                  ],
+                ),
+              ),
+
+              // Navigation buttons
+              _buildNavigationButtons(context),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  void _handleBack() {
+    if (controller.currentStep.value > 0) {
+      controller.previousStep();
+    } else {
+      Get.back();
+    }
   }
 
   Widget _buildProgressIndicator() {
@@ -512,6 +531,10 @@ class RegisterView extends GetView<RegisterController> {
                   controller.selectedVillageId.value = item?['id'];
                 },
                 validator: (v) => v == null ? 'Required' : null,
+                onBeforePopupOpening: (selectedItem) async {
+                  FocusScope.of(context).unfocus();
+                  return true;
+                },
               ),
             ),
             SizedBox(height: 3.h),
@@ -572,6 +595,10 @@ class RegisterView extends GetView<RegisterController> {
                 onChanged: (item) {
                   if (item != null) controller.loadStates(item['code']);
                 },
+                onBeforePopupOpening: (selectedItem) async {
+                  FocusScope.of(context).unfocus();
+                  return true;
+                },
               ),
             ),
             SizedBox(height: 2.h),
@@ -604,6 +631,10 @@ class RegisterView extends GetView<RegisterController> {
                   if (item != null) controller.loadCities(item['code']);
                 },
                 validator: (v) => v == null ? 'Required' : null,
+                onBeforePopupOpening: (selectedItem) async {
+                  FocusScope.of(context).unfocus();
+                  return true;
+                },
               ),
             ),
             SizedBox(height: 2.h),
@@ -636,6 +667,10 @@ class RegisterView extends GetView<RegisterController> {
                   controller.selectedCityName.value = item?['name'] ?? '';
                 },
                 validator: (v) => v == null ? 'Required' : null,
+                onBeforePopupOpening: (selectedItem) async {
+                  FocusScope.of(context).unfocus();
+                  return true;
+                },
               ),
             ),
             SizedBox(height: 2.h),
@@ -1310,6 +1345,10 @@ class RegisterView extends GetView<RegisterController> {
                       },
                       validator: (v) =>
                           v == null ? 'Business type is required' : null,
+                      onBeforePopupOpening: (selectedItem) async {
+                        FocusScope.of(context).unfocus();
+                        return true;
+                      },
                     ),
                   ),
                   SizedBox(height: 1.5.h),
@@ -1343,16 +1382,14 @@ class RegisterView extends GetView<RegisterController> {
                       onChanged: (item) async {
                         if (item != null) {
                           form.selectedCategoryId.value = item['id'];
-                          // We need a specific list for this form, but we are using DropdownSearch.multiSelection below.
-                          // The view needs a list of subcategories.
-                          // But we replaced `loadBusinessSubcategories` in controller which was updating a SINGLE list.
-                          // We need `form.subcategories` list.
-                          // I will add `subcategories` to BusinessFormState via the onInit or just use FutureBuilder here?
-                          // Better: Add `RxList<Map<String, dynamic>> subcategories` to BusinessFormState.
                         }
                       },
                       validator: (v) =>
                           v == null ? 'Business category is required' : null,
+                      onBeforePopupOpening: (selectedItem) async {
+                        FocusScope.of(context).unfocus();
+                        return true;
+                      },
                     ),
                   ),
                   SizedBox(height: 1.5.h),
@@ -1394,24 +1431,23 @@ class RegisterView extends GetView<RegisterController> {
                                   hintText: 'Select multiple subcategories',
                                 ),
                               ),
-                              popupProps:
-                                  PopupPropsMultiSelection.modalBottomSheet(
-                                    showSearchBox: true,
-                                    searchFieldProps: const TextFieldProps(
-                                      decoration: InputDecoration(
-                                        hintText: 'Search subcategories...',
-                                        prefixIcon: Icon(Icons.search),
-                                      ),
-                                    ),
-                                    modalBottomSheetProps:
-                                        const ModalBottomSheetProps(
-                                          useSafeArea: true,
-                                        ),
+                              popupProps: PopupPropsMultiSelection.menu(
+                                showSearchBox: true,
+                                searchFieldProps: const TextFieldProps(
+                                  decoration: InputDecoration(
+                                    hintText: 'Search subcategories...',
+                                    prefixIcon: Icon(Icons.search),
                                   ),
+                                ),
+                              ),
                               onChanged: (items) {
                                 form.selectedSubcategoryIds.value = items
                                     .map((item) => item['id'] as int)
                                     .toList();
+                              },
+                              onBeforePopupOpening: (selectedItems) async {
+                                FocusScope.of(context).unfocus();
+                                return true;
                               },
                             ),
                             SizedBox(height: 1.5.h),
@@ -1502,119 +1538,163 @@ class RegisterView extends GetView<RegisterController> {
                       controller: controller.experienceController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Experience (in years)',
+                        labelText: 'Experience (in years) *',
                         prefixIcon: Icon(Icons.timeline),
                         hintText: 'e.g. 3',
                       ),
+                      validator: (v) =>
+                          v!.isEmpty ? 'Experience is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
                     TextFormField(
                       controller: controller.departmentController,
                       decoration: const InputDecoration(
-                        labelText: 'Department',
+                        labelText: 'Department *',
                         prefixIcon: Icon(Icons.business_center),
                         hintText: 'e.g. IT, Sales, Marketing',
                       ),
                       textCapitalization: TextCapitalization.words,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Department is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
                     Obx(
-                      () => InkWell(
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1970),
-                            lastDate: DateTime.now(),
-                          );
-                          if (date != null) {
-                            controller.dateOfJoining.value = date;
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Date of Joining',
-                            prefixIcon: Icon(Icons.calendar_today),
-                            hintText: 'Tap to select date',
-                          ),
-                          child: Text(
-                            controller.dateOfJoining.value != null
-                                ? '${controller.dateOfJoining.value!.day}/${controller.dateOfJoining.value!.month}/${controller.dateOfJoining.value!.year}'
-                                : 'Select date',
-                            style: TextStyle(
-                              color: controller.dateOfJoining.value != null
-                                  ? Colors.black
-                                  : Colors.grey,
+                      () => FormField<DateTime>(
+                        initialValue: controller.dateOfJoining.value,
+                        validator: (v) => controller.dateOfJoining.value == null
+                            ? 'Date of joining is required'
+                            : null,
+                        builder: (state) {
+                          return InkWell(
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(1970),
+                                lastDate: DateTime.now(),
+                              );
+                              if (date != null) {
+                                controller.dateOfJoining.value = date;
+                                state.didChange(date);
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: InputDecoration(
+                                labelText: 'Date of Joining *',
+                                prefixIcon: const Icon(Icons.calendar_today),
+                                hintText: 'Tap to select date',
+                                errorText: state.hasError
+                                    ? state.errorText
+                                    : null,
+                              ),
+                              child: Text(
+                                controller.dateOfJoining.value != null
+                                    ? '${controller.dateOfJoining.value!.day}/${controller.dateOfJoining.value!.month}/${controller.dateOfJoining.value!.year}'
+                                    : 'Select date',
+                                style: TextStyle(
+                                  color: controller.dateOfJoining.value != null
+                                      ? Colors.black
+                                      : Colors.grey,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                     SizedBox(height: 1.5.h),
 
                     // Job Type - Searchable Dropdown
-                    DropdownSearch<Map<String, dynamic>>(
-                      items: (filter, _) => controller.jobTypes.toList(),
-                      selectedItem: controller.jobTypes.firstWhereOrNull(
-                        (t) => t['id'] == controller.selectedJobTypeId.value,
-                      ),
-                      itemAsString: (item) => item['type_name'] ?? '',
-                      compareFn: (a, b) => a['id'] == b['id'],
-                      decoratorProps: const DropDownDecoratorProps(
-                        decoration: InputDecoration(
-                          labelText: 'Job Type *',
-                          prefixIcon: Icon(Icons.work_outline),
+                    Obx(
+                      () => DropdownSearch<Map<String, dynamic>>(
+                        items: (filter, _) => controller.jobTypes.toList(),
+                        selectedItem: controller.jobTypes.firstWhereOrNull(
+                          (t) =>
+                              t['id'].toString() ==
+                              controller.selectedJobTypeId.value.toString(),
                         ),
-                      ),
-                      popupProps: PopupProps.menu(
-                        showSearchBox: true,
-                        searchFieldProps: const TextFieldProps(
+                        itemAsString: (item) => item['type_name'] ?? '',
+                        compareFn: (a, b) =>
+                            a['id'].toString() == b['id'].toString(),
+                        decoratorProps: const DropDownDecoratorProps(
                           decoration: InputDecoration(
-                            hintText: 'Search type...',
-                            prefixIcon: Icon(Icons.search),
+                            labelText: 'Job Type *',
+                            prefixIcon: Icon(Icons.work_outline),
                           ),
                         ),
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: const TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: 'Search type...',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                          ),
+                        ),
+                        onChanged: (item) {
+                          if (item != null) {
+                            controller.selectedJobTypeId.value = int.tryParse(
+                              item['id'].toString(),
+                            );
+                          } else {
+                            controller.selectedJobTypeId.value = null;
+                          }
+                        },
+                        validator: (v) =>
+                            v == null ? 'Job type is required' : null,
+                        autoValidateMode: AutovalidateMode.onUserInteraction,
+                        onBeforePopupOpening: (selectedItem) async {
+                          FocusScope.of(context).unfocus();
+                          return true;
+                        },
                       ),
-                      onChanged: (item) {
-                        controller.selectedJobTypeId.value = item?['id'];
-                      },
-                      validator: (v) =>
-                          v == null ? 'Job type is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
                     // Job Category - Searchable Dropdown
-                    DropdownSearch<Map<String, dynamic>>(
-                      items: (filter, _) => controller.jobCategories.toList(),
-                      selectedItem: controller.jobCategories.firstWhereOrNull(
-                        (c) =>
-                            c['id'] == controller.selectedJobCategoryId.value,
-                      ),
-                      itemAsString: (item) => item['category_name'] ?? '',
-                      compareFn: (a, b) => a['id'] == b['id'],
-                      decoratorProps: const DropDownDecoratorProps(
-                        decoration: InputDecoration(
-                          labelText: 'Job Category *',
-                          prefixIcon: Icon(Icons.category),
+                    Obx(
+                      () => DropdownSearch<Map<String, dynamic>>(
+                        items: (filter, _) => controller.jobCategories.toList(),
+                        selectedItem: controller.jobCategories.firstWhereOrNull(
+                          (c) =>
+                              c['id'].toString() ==
+                              controller.selectedJobCategoryId.value.toString(),
                         ),
-                      ),
-                      popupProps: PopupProps.menu(
-                        showSearchBox: true,
-                        searchFieldProps: const TextFieldProps(
+                        itemAsString: (item) => item['category_name'] ?? '',
+                        compareFn: (a, b) =>
+                            a['id'].toString() == b['id'].toString(),
+                        decoratorProps: const DropDownDecoratorProps(
                           decoration: InputDecoration(
-                            hintText: 'Search category...',
-                            prefixIcon: Icon(Icons.search),
+                            labelText: 'Job Category *',
+                            prefixIcon: Icon(Icons.category),
                           ),
                         ),
+                        popupProps: PopupProps.menu(
+                          showSearchBox: true,
+                          searchFieldProps: const TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: 'Search category...',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                          ),
+                        ),
+                        onChanged: (item) {
+                          if (item != null) {
+                            controller.loadJobSubcategories(
+                              int.tryParse(item['id'].toString()) ?? 0,
+                            );
+                          }
+                        },
+                        validator: (v) =>
+                            v == null ? 'Job category is required' : null,
+                        autoValidateMode: AutovalidateMode.onUserInteraction,
+                        onBeforePopupOpening: (selectedItem) async {
+                          FocusScope.of(context).unfocus();
+                          return true;
+                        },
                       ),
-                      onChanged: (item) {
-                        if (item != null)
-                          controller.loadJobSubcategories(item['id']);
-                      },
-                      validator: (v) =>
-                          v == null ? 'Job category is required' : null,
                     ),
                     SizedBox(height: 1.5.h),
 
@@ -1646,26 +1726,29 @@ class RegisterView extends GetView<RegisterController> {
                                       hintText: 'Select multiple subcategories',
                                     ),
                                   ),
-                                  popupProps:
-                                      PopupPropsMultiSelection.modalBottomSheet(
-                                        showSearchBox: true,
-                                        searchFieldProps: const TextFieldProps(
-                                          decoration: InputDecoration(
-                                            hintText: 'Search subcategories...',
-                                            prefixIcon: Icon(Icons.search),
-                                          ),
-                                        ),
-                                        modalBottomSheetProps:
-                                            const ModalBottomSheetProps(
-                                              useSafeArea: true,
-                                            ),
+                                  popupProps: PopupPropsMultiSelection.menu(
+                                    showSearchBox: true,
+                                    searchFieldProps: const TextFieldProps(
+                                      decoration: InputDecoration(
+                                        hintText: 'Search subcategories...',
+                                        prefixIcon: Icon(Icons.search),
                                       ),
+                                    ),
+                                  ),
                                   onChanged: (items) {
                                     controller.selectedJobSubcategoryIds.value =
                                         items
                                             .map((item) => item['id'] as int)
                                             .toList();
                                   },
+                                  onBeforePopupOpening: (selectedItems) async {
+                                    FocusScope.of(context).unfocus();
+                                    return true;
+                                  },
+                                  validator: (items) =>
+                                      items == null || items.isEmpty
+                                      ? 'Select at least one subcategory'
+                                      : null,
                                 ),
                               ],
                             )

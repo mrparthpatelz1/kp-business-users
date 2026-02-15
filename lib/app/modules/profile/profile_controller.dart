@@ -31,8 +31,8 @@ class ProfileController extends GetxController {
     loadMyPosts();
   }
 
-  Future<void> loadProfile() async {
-    isLoading.value = true;
+  Future<void> loadProfile({bool refresh = false}) async {
+    if (!refresh) isLoading.value = true;
     try {
       final result = await _authService.getProfile();
       if (result['success'] == true) {
@@ -42,6 +42,10 @@ class ProfileController extends GetxController {
       debugPrint('Error loading profile: $e');
     }
     isLoading.value = false;
+  }
+
+  Future<void> refreshProfile() async {
+    await Future.wait([loadProfile(refresh: true), loadMyPosts()]);
   }
 
   Future<void> loadMyPosts() async {

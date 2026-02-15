@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/user_profile_content.dart';
+import '../../widgets/shimmer_loading.dart';
 import 'profile_controller.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -27,7 +28,7 @@ class ProfileView extends GetView<ProfileController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
+          return const ShimmerProfile();
         }
 
         final user = controller.profile.value ?? controller.currentUser;
@@ -36,7 +37,7 @@ class ProfileView extends GetView<ProfileController> {
         }
 
         return RefreshIndicator(
-          onRefresh: () => controller.loadProfile(),
+          onRefresh: () async => await controller.refreshProfile(),
           child: SingleChildScrollView(
             padding: EdgeInsets.all(4.w),
             child: UserProfileContent(user: user, isOwnProfile: true),

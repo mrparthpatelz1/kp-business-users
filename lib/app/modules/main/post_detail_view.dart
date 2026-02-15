@@ -38,63 +38,23 @@ class PostDetailView extends StatelessWidget {
               child: CustomScrollView(
                 slivers: [
                   // App Bar - Large image header ONLY for ads
-                  if (isAd)
-                    SliverAppBar(
-                      expandedHeight: 35.h,
-                      pinned: true,
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: post['image_url'] != null
-                            ? Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    post['image_url'].startsWith('http')
-                                        ? post['image_url']
-                                        : '${ApiConstants.assetBaseUrl}${post['image_url']}',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      color: _getPostTypeColor(
-                                        postType,
-                                      ).withValues(alpha: 0.1),
-                                      child: Icon(
-                                        _getPostTypeIcon(postType),
-                                        size: 100,
-                                        color: _getPostTypeColor(postType),
-                                      ),
-                                    ),
-                                  ),
-                                  // Gradient overlay for better readability
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withValues(alpha: 0.7),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Container(
-                                color: _getPostTypeColor(
-                                  postType,
-                                ).withValues(alpha: 0.1),
-                                child: Icon(
-                                  _getPostTypeIcon(postType),
-                                  size: 100,
-                                  color: _getPostTypeColor(postType),
-                                ),
-                              ),
+                  // Regular AppBar for all posts
+                  SliverAppBar(
+                    pinned: true,
+                    title: Text(_getPostTypeLabel(postType)),
+                  ),
+
+                  // Dynamic Image for Ads
+                  if (isAd && post['image_url'] != null)
+                    SliverToBoxAdapter(
+                      child: Image.network(
+                        post['image_url'].startsWith('http')
+                            ? post['image_url']
+                            : '${ApiConstants.assetBaseUrl}${post['image_url']}',
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                        errorBuilder: (_, __, ___) => const SizedBox(),
                       ),
-                    )
-                  else
-                    // Regular AppBar for non-ad posts
-                    SliverAppBar(
-                      pinned: true,
-                      title: Text(_getPostTypeLabel(postType)),
                     ),
 
                   // Content
