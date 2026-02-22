@@ -15,4 +15,6 @@ abstract class Routes {
   static const CHAT_LIST = '/chat-list';
   static const CHAT_DETAIL = '/chat-detail';
   static const POST_DETAIL = '/post-detail';
+  static const FORGOT_PASSWORD = '/forgot-password';
+  static const ANNOUNCEMENTS = '/announcements';
 }

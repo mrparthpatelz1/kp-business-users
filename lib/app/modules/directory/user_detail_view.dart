@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
+import '../../core/utils/date_utils.dart';
 import '../../widgets/user_profile_content.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
@@ -196,12 +196,7 @@ class _UserDetailViewState extends State<UserDetailView> {
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd-MM-yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+    return AppDateUtils.formatDate(dateStr);
   }
 
   String _formatPostType(String? type) {

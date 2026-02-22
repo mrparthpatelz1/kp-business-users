@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/date_utils.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import '../../../core/theme/app_theme.dart';
 import 'register_controller.dart';
@@ -205,6 +205,7 @@ class RegisterView extends GetView<RegisterController> {
                 Expanded(
                   child: TextFormField(
                     controller: controller.fullNameController,
+                    focusNode: controller.fullNameFocusNode,
                     decoration: const InputDecoration(labelText: 'Full Name *'),
                     textCapitalization: TextCapitalization.words,
                     validator: (v) => v!.isEmpty ? 'Required' : null,
@@ -214,6 +215,7 @@ class RegisterView extends GetView<RegisterController> {
                 Expanded(
                   child: TextFormField(
                     controller: controller.surnameController,
+                    focusNode: controller.surnameFocusNode,
                     decoration: const InputDecoration(labelText: 'Saakh *'),
                     textCapitalization: TextCapitalization.words,
                     validator: (v) => v!.isEmpty ? 'Required' : null,
@@ -227,6 +229,7 @@ class RegisterView extends GetView<RegisterController> {
             Obx(
               () => TextFormField(
                 controller: controller.emailController,
+                focusNode: controller.emailFocusNode,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email *',
@@ -288,8 +291,10 @@ class RegisterView extends GetView<RegisterController> {
                           ),
                         );
                       }).toList(),
-                      onChanged: (v) =>
-                          controller.phoneCountryCode.value = v ?? '+91',
+                      onChanged: (v) {
+                        controller.phoneCountryCode.value = v ?? '+91';
+                        controller.clearAllFocus();
+                      },
                     ),
                   ),
                 ),
@@ -299,6 +304,7 @@ class RegisterView extends GetView<RegisterController> {
                   child: Obx(
                     () => TextFormField(
                       controller: controller.phoneController,
+                      focusNode: controller.phoneFocusNode,
                       keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         labelText: 'Mobile Number *',
@@ -349,7 +355,10 @@ class RegisterView extends GetView<RegisterController> {
                     child: ChoiceChip(
                       label: Text(g.capitalizeFirst!),
                       selected: isSelected,
-                      onSelected: (_) => controller.gender.value = g,
+                      onSelected: (_) {
+                        controller.gender.value = g;
+                        controller.clearAllFocus();
+                      },
                       selectedColor: AppTheme.primaryColor,
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : AppTheme.textPrimary,
@@ -372,9 +381,9 @@ class RegisterView extends GetView<RegisterController> {
                   ),
                   child: Text(
                     controller.dateOfBirth.value != null
-                        ? DateFormat(
-                            'dd/MM/yyyy',
-                          ).format(controller.dateOfBirth.value!)
+                        ? AppDateUtils.formatDateSlash(
+                            controller.dateOfBirth.value!.toIso8601String(),
+                          )
                         : 'Select date',
                     style: TextStyle(
                       color: controller.dateOfBirth.value != null
@@ -402,8 +411,10 @@ class RegisterView extends GetView<RegisterController> {
                   return ChoiceChip(
                     label: Text(bg),
                     selected: isSelected,
-                    onSelected: (_) =>
-                        controller.bloodGroup.value = isSelected ? '' : bg,
+                    onSelected: (_) {
+                      controller.bloodGroup.value = isSelected ? '' : bg;
+                      controller.clearAllFocus();
+                    },
                     selectedColor: AppTheme.primaryColor,
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : AppTheme.textPrimary,
@@ -418,6 +429,7 @@ class RegisterView extends GetView<RegisterController> {
             Obx(
               () => TextFormField(
                 controller: controller.passwordController,
+                focusNode: controller.passwordFocusNode,
                 obscureText: controller.obscurePassword.value,
                 decoration: InputDecoration(
                   labelText: 'Password *',
@@ -446,6 +458,7 @@ class RegisterView extends GetView<RegisterController> {
             Obx(
               () => TextFormField(
                 controller: controller.confirmPasswordController,
+                focusNode: controller.confirmPasswordFocusNode,
                 obscureText: controller.obscureConfirmPassword.value,
                 decoration: InputDecoration(
                   labelText: 'Confirm Password *',
@@ -530,6 +543,7 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 onChanged: (item) {
                   controller.selectedVillageId.value = item?['id'];
+                  controller.clearAllFocus();
                 },
                 validator: (v) => v == null ? 'Required' : null,
                 onBeforePopupOpening: (selectedItem) async {
@@ -559,6 +573,7 @@ class RegisterView extends GetView<RegisterController> {
             // Address line
             TextFormField(
               controller: controller.addressController,
+              focusNode: controller.addressFocusNode,
               decoration: const InputDecoration(
                 labelText: 'Address Line *',
                 prefixIcon: Icon(Icons.home_outlined),
@@ -597,6 +612,7 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 onChanged: (item) {
                   if (item != null) controller.loadStates(item['code']);
+                  controller.clearAllFocus();
                 },
                 onBeforePopupOpening: (selectedItem) async {
                   FocusScope.of(context).unfocus();
@@ -634,6 +650,7 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 onChanged: (item) {
                   if (item != null) controller.loadCities(item['code']);
+                  controller.clearAllFocus();
                 },
                 validator: (v) => v == null ? 'Required' : null,
                 onBeforePopupOpening: (selectedItem) async {
@@ -672,6 +689,7 @@ class RegisterView extends GetView<RegisterController> {
                 ),
                 onChanged: (item) {
                   controller.selectedCityName.value = item?['name'] ?? '';
+                  controller.clearAllFocus();
                 },
                 validator: (v) => v == null ? 'Required' : null,
                 onBeforePopupOpening: (selectedItem) async {
@@ -685,6 +703,7 @@ class RegisterView extends GetView<RegisterController> {
             // Zipcode
             TextFormField(
               controller: controller.zipcodeController,
+              focusNode: controller.zipcodeFocusNode,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Zipcode *',
@@ -896,6 +915,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(
             () => TextFormField(
               controller: controller.institutionController,
+              focusNode: controller.institutionFocusNode,
               decoration: InputDecoration(
                 labelText: controller.educationType.value == 'school'
                     ? 'School Name'
@@ -914,6 +934,7 @@ class RegisterView extends GetView<RegisterController> {
           Obx(
             () => TextFormField(
               controller: controller.qualificationController,
+              focusNode: controller.qualificationFocusNode,
               decoration: InputDecoration(
                 labelText: controller.educationType.value == 'school'
                     ? 'Standard/Class'
@@ -935,6 +956,7 @@ class RegisterView extends GetView<RegisterController> {
                     children: [
                       TextFormField(
                         controller: controller.fieldOfStudyController,
+                        focusNode: controller.fieldOfStudyFocusNode,
                         decoration: const InputDecoration(
                           labelText: 'Branch/Stream',
                           hintText: 'e.g. Computer Science, Commerce',
@@ -951,6 +973,7 @@ class RegisterView extends GetView<RegisterController> {
           // Start Year
           TextFormField(
             controller: controller.startYearController,
+            focusNode: controller.startYearFocusNode,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
               labelText: 'Start Year',
@@ -978,6 +1001,7 @@ class RegisterView extends GetView<RegisterController> {
             () => controller.isCurrentlyStudying.value
                 ? TextFormField(
                     controller: controller.currentYearController,
+                    focusNode: controller.currentYearFocusNode,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Current Year of Study',
@@ -992,6 +1016,7 @@ class RegisterView extends GetView<RegisterController> {
                           Expanded(
                             child: TextFormField(
                               controller: controller.passingYearController,
+                              focusNode: controller.passingYearFocusNode,
                               keyboardType: TextInputType.number,
                               decoration: const InputDecoration(
                                 labelText: 'Passing Year',
@@ -1003,6 +1028,7 @@ class RegisterView extends GetView<RegisterController> {
                           Expanded(
                             child: TextFormField(
                               controller: controller.gradeController,
+                              focusNode: controller.gradeFocusNode,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
@@ -1183,6 +1209,7 @@ class RegisterView extends GetView<RegisterController> {
 
                   TextFormField(
                     controller: form.nameController,
+                    focusNode: form.nameFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Business Name *',
                       prefixIcon: Icon(Icons.store),
@@ -1196,6 +1223,7 @@ class RegisterView extends GetView<RegisterController> {
                   // Year of Establishment
                   TextFormField(
                     controller: form.yearOfEstablishmentController,
+                    focusNode: form.yearOfEstablishmentFocusNode,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Year of Establishment',
@@ -1207,6 +1235,7 @@ class RegisterView extends GetView<RegisterController> {
 
                   TextFormField(
                     controller: form.emailController,
+                    focusNode: form.emailFocusNode,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'Business Email',
@@ -1247,8 +1276,10 @@ class RegisterView extends GetView<RegisterController> {
                                 ),
                               );
                             }).toList(),
-                            onChanged: (v) =>
-                                form.phoneCountryCode.value = v ?? '+91',
+                            onChanged: (v) {
+                              form.phoneCountryCode.value = v ?? '+91';
+                              controller.clearAllFocus();
+                            },
                           ),
                         ),
                       ),
@@ -1256,6 +1287,7 @@ class RegisterView extends GetView<RegisterController> {
                       Expanded(
                         child: TextFormField(
                           controller: form.phoneController,
+                          focusNode: form.phoneFocusNode,
                           keyboardType: TextInputType.phone,
                           decoration: const InputDecoration(
                             labelText: 'Business Phone',
@@ -1278,6 +1310,7 @@ class RegisterView extends GetView<RegisterController> {
                   // GST Number
                   TextFormField(
                     controller: form.gstNumberController,
+                    focusNode: form.gstNumberFocusNode,
                     textCapitalization: TextCapitalization.characters,
                     decoration: const InputDecoration(
                       labelText: 'GST Number',
@@ -1290,6 +1323,7 @@ class RegisterView extends GetView<RegisterController> {
                   // Website URL
                   TextFormField(
                     controller: form.websiteUrlController,
+                    focusNode: form.websiteUrlFocusNode,
                     keyboardType: TextInputType.url,
                     decoration: const InputDecoration(
                       labelText: 'Website URL',
@@ -1302,6 +1336,7 @@ class RegisterView extends GetView<RegisterController> {
                   // Number of Employees
                   TextFormField(
                     controller: form.numberOfEmployeesController,
+                    focusNode: form.numberOfEmployeesFocusNode,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Number of Employees',
@@ -1314,6 +1349,7 @@ class RegisterView extends GetView<RegisterController> {
                   // Annual Turnover
                   TextFormField(
                     controller: form.annualTurnoverController,
+                    focusNode: form.annualTurnoverFocusNode,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Annual Turnover',
@@ -1351,6 +1387,7 @@ class RegisterView extends GetView<RegisterController> {
                       ),
                       onChanged: (item) {
                         form.selectedTypeId.value = item?['id'];
+                        controller.clearAllFocus();
                       },
                       validator: (v) =>
                           v == null ? 'Business type is required' : null,
@@ -1394,6 +1431,7 @@ class RegisterView extends GetView<RegisterController> {
                         if (item != null) {
                           form.selectedCategoryId.value = item['id'];
                         }
+                        controller.clearAllFocus();
                       },
                       validator: (v) =>
                           v == null ? 'Business category is required' : null,
@@ -1457,6 +1495,7 @@ class RegisterView extends GetView<RegisterController> {
                                 form.selectedSubcategoryIds.value = items
                                     .map((item) => item['id'] as int)
                                     .toList();
+                                controller.clearAllFocus();
                               },
                               onBeforePopupOpening: (selectedItems) async {
                                 FocusScope.of(context).unfocus();
@@ -1472,6 +1511,7 @@ class RegisterView extends GetView<RegisterController> {
 
                   TextFormField(
                     controller: form.addressController,
+                    focusNode: form.addressFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Business Address *',
                       prefixIcon: Icon(Icons.location_on),
@@ -1484,6 +1524,7 @@ class RegisterView extends GetView<RegisterController> {
 
                   TextFormField(
                     controller: form.descriptionController,
+                    focusNode: form.descriptionFocusNode,
                     decoration: const InputDecoration(
                       labelText: 'Business Description',
                       hintText: 'Brief description of your business',
@@ -1525,6 +1566,7 @@ class RegisterView extends GetView<RegisterController> {
                   children: [
                     TextFormField(
                       controller: controller.companyNameController,
+                      focusNode: controller.companyNameFocusNode,
                       decoration: const InputDecoration(
                         labelText: 'Company Name *',
                         prefixIcon: Icon(Icons.business),
@@ -1537,6 +1579,7 @@ class RegisterView extends GetView<RegisterController> {
 
                     TextFormField(
                       controller: controller.designationController,
+                      focusNode: controller.designationFocusNode,
                       decoration: const InputDecoration(
                         labelText: 'Designation/Role *',
                         prefixIcon: Icon(Icons.badge),
@@ -1549,6 +1592,7 @@ class RegisterView extends GetView<RegisterController> {
 
                     TextFormField(
                       controller: controller.experienceController,
+                      focusNode: controller.experienceFocusNode,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Experience (in years) *',
@@ -1562,6 +1606,7 @@ class RegisterView extends GetView<RegisterController> {
 
                     TextFormField(
                       controller: controller.departmentController,
+                      focusNode: controller.departmentFocusNode,
                       decoration: const InputDecoration(
                         labelText: 'Department *',
                         prefixIcon: Icon(Icons.business_center),
@@ -1656,6 +1701,7 @@ class RegisterView extends GetView<RegisterController> {
                           } else {
                             controller.selectedJobTypeId.value = null;
                           }
+                          controller.clearAllFocus();
                         },
                         validator: (v) =>
                             v == null ? 'Job type is required' : null,
@@ -1703,6 +1749,7 @@ class RegisterView extends GetView<RegisterController> {
                               int.tryParse(item['id'].toString()) ?? 0,
                             );
                           }
+                          controller.clearAllFocus();
                         },
                         validator: (v) =>
                             v == null ? 'Job category is required' : null,
@@ -1759,6 +1806,7 @@ class RegisterView extends GetView<RegisterController> {
                                         items
                                             .map((item) => item['id'] as int)
                                             .toList();
+                                    controller.clearAllFocus();
                                   },
                                   onBeforePopupOpening: (selectedItems) async {
                                     FocusScope.of(context).unfocus();
@@ -1811,7 +1859,10 @@ class RegisterView extends GetView<RegisterController> {
     required bool isSelected,
   }) {
     return InkWell(
-      onTap: () => controller.userType.value = value,
+      onTap: () {
+        controller.userType.value = value;
+        controller.clearAllFocus();
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: EdgeInsets.all(4.w),

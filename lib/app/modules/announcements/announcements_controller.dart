@@ -1,8 +1,11 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:responsive_sizer/responsive_sizer.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/providers/api_provider.dart';
 import '../../data/services/storage_service.dart';
+import '../../routes/app_routes.dart';
 
 class AnnouncementsController extends GetxController {
   final ApiProvider _api = Get.find<ApiProvider>();
@@ -18,7 +21,7 @@ class AnnouncementsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadAnnouncements();
+    loadAnnouncements().then((_) => checkAndShowAnnouncementPopup());
   }
 
   Future<void> loadAnnouncements() async {
@@ -87,5 +90,105 @@ class AnnouncementsController extends GetxController {
       debugPrint('Error loading announcement detail: $e');
     }
     return null;
+  }
+
+  /// Check if there's a new announcement and show a popup if it's the first time for this session/announcement
+  Future<void> checkAndShowAnnouncementPopup() async {
+    if (announcements.isEmpty) return;
+
+    final latest = announcements.first;
+    final String? announcementId = latest['uuid'] ?? latest['id']?.toString();
+
+    if (announcementId == null) return;
+
+    // Check if this specific announcement has already been shown as a popup
+    final lastShownId = _storage.lastShownAnnouncementPopupId;
+
+    if (lastShownId != announcementId) {
+      // Show popup
+      _showAnnouncementPopupDialog(latest);
+      // Mark as shown
+      _storage.lastShownAnnouncementPopupId = announcementId;
+    }
+  }
+
+  void _showAnnouncementPopupDialog(Map<String, dynamic> announcement) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: EdgeInsets.all(5.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'New Announcement',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              SizedBox(height: 2.h),
+              if (announcement['image_url'] != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    ApiConstants.getFullUrl(announcement['image_url']),
+                    width: double.infinity,
+                    height: 20.h,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+                SizedBox(height: 2.h),
+              ],
+              Text(
+                announcement['title'] ?? '',
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                announcement['content'] ?? '',
+                style: TextStyle(fontSize: 14.sp),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 3.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(Routes.ANNOUNCEMENTS);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('View All'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

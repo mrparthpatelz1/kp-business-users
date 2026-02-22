@@ -21,6 +21,16 @@ class BusinessFormState {
   final gstNumberController = TextEditingController();
   final websiteUrlController = TextEditingController();
   final numberOfEmployeesController = TextEditingController();
+  final nameFocusNode = FocusNode();
+  final emailFocusNode = FocusNode();
+  final phoneFocusNode = FocusNode();
+  final addressFocusNode = FocusNode();
+  final descriptionFocusNode = FocusNode();
+  final annualTurnoverFocusNode = FocusNode();
+  final yearOfEstablishmentFocusNode = FocusNode();
+  final gstNumberFocusNode = FocusNode();
+  final websiteUrlFocusNode = FocusNode();
+  final numberOfEmployeesFocusNode = FocusNode();
 
   final RxString phoneCountryCode = '+91'.obs;
   final Rx<int?> selectedTypeId = Rx<int?>(null);
@@ -46,6 +56,16 @@ class BusinessFormState {
     gstNumberController.dispose();
     websiteUrlController.dispose();
     numberOfEmployeesController.dispose();
+    nameFocusNode.dispose();
+    emailFocusNode.dispose();
+    phoneFocusNode.dispose();
+    addressFocusNode.dispose();
+    descriptionFocusNode.dispose();
+    annualTurnoverFocusNode.dispose();
+    yearOfEstablishmentFocusNode.dispose();
+    gstNumberFocusNode.dispose();
+    websiteUrlFocusNode.dispose();
+    numberOfEmployeesFocusNode.dispose();
   }
 }
 
@@ -141,6 +161,55 @@ class RegisterController extends GetxController {
   // Replaced single controllers with a list of forms
   final RxList<BusinessFormState> businessForms = <BusinessFormState>[].obs;
 
+  // Focus Nodes
+  final fullNameFocusNode = FocusNode();
+  final surnameFocusNode = FocusNode();
+  final emailFocusNode = FocusNode();
+  final phoneFocusNode = FocusNode();
+  final passwordFocusNode = FocusNode();
+  final confirmPasswordFocusNode = FocusNode();
+  final addressFocusNode = FocusNode();
+  final zipcodeFocusNode = FocusNode();
+  final qualificationFocusNode = FocusNode();
+  final institutionFocusNode = FocusNode();
+  final fieldOfStudyFocusNode = FocusNode();
+  final startYearFocusNode = FocusNode();
+  final passingYearFocusNode = FocusNode();
+  final currentYearFocusNode = FocusNode();
+  final gradeFocusNode = FocusNode();
+
+  void clearAllFocus() {
+    fullNameFocusNode.unfocus();
+    surnameFocusNode.unfocus();
+    emailFocusNode.unfocus();
+    phoneFocusNode.unfocus();
+    passwordFocusNode.unfocus();
+    confirmPasswordFocusNode.unfocus();
+    addressFocusNode.unfocus();
+    zipcodeFocusNode.unfocus();
+    qualificationFocusNode.unfocus();
+    institutionFocusNode.unfocus();
+    fieldOfStudyFocusNode.unfocus();
+    startYearFocusNode.unfocus();
+    passingYearFocusNode.unfocus();
+    currentYearFocusNode.unfocus();
+    gradeFocusNode.unfocus();
+
+    for (var form in businessForms) {
+      form.nameFocusNode.unfocus();
+      form.emailFocusNode.unfocus();
+      form.phoneFocusNode.unfocus();
+      form.addressFocusNode.unfocus();
+      form.descriptionFocusNode.unfocus();
+      form.annualTurnoverFocusNode.unfocus();
+      form.yearOfEstablishmentFocusNode.unfocus();
+      form.gstNumberFocusNode.unfocus();
+      form.websiteUrlFocusNode.unfocus();
+      form.numberOfEmployeesFocusNode.unfocus();
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   void addBusinessForm() {
     businessForms.add(BusinessFormState());
   }
@@ -162,8 +231,11 @@ class RegisterController extends GetxController {
   final Rx<int?> selectedJobTypeId = Rx<int?>(null);
   final Rx<int?> selectedJobCategoryId = Rx<int?>(null);
   final RxList<int> selectedJobSubcategoryIds = <int>[].obs; // Multi-select
-  final RxBool isCurrentlyWorking =
-      true.obs; // For job users - are they currently employed?
+  final RxBool isCurrentlyWorking = true.obs;
+  final companyNameFocusNode = FocusNode();
+  final designationFocusNode = FocusNode();
+  final departmentFocusNode = FocusNode();
+  final experienceFocusNode = FocusNode();
 
   // Master data
   final RxList<Map<String, dynamic>> villages = <Map<String, dynamic>>[].obs;
@@ -212,6 +284,7 @@ class RegisterController extends GetxController {
   }
 
   void showImagePickerOptions() {
+    FocusManager.instance.primaryFocus?.unfocus();
     Get.bottomSheet(
       SafeArea(
         child: Container(
@@ -311,19 +384,19 @@ class RegisterController extends GetxController {
     // ...
   }
 
-  // Helper to fetch subcategories for a form
-  Future<List<Map<String, dynamic>>> getSubcategoriesForForm(
-    int categoryId,
-  ) async {
-    return await _masterService.getBusinessSubcategories(categoryId);
+  // Helper to fetch subcategories for a form (all, unlinked from category)
+  Future<List<Map<String, dynamic>>> getSubcategoriesForForm([
+    int? categoryId,
+  ]) async {
+    return await _masterService.getBusinessSubcategories();
   }
 
   Future<void> loadJobSubcategories(int categoryId) async {
     selectedJobCategoryId.value = categoryId;
-    selectedJobSubcategoryIds.clear();
-    jobSubcategories.value = await _masterService.getJobSubcategories(
-      categoryId,
-    );
+    // Subcategories are no longer filtered by category — load all if not yet loaded
+    if (jobSubcategories.isEmpty) {
+      jobSubcategories.value = await _masterService.getJobSubcategories();
+    }
   }
 
   Future<void> nextStep() async {
@@ -553,6 +626,7 @@ class RegisterController extends GetxController {
   }
 
   void selectDateOfBirth(BuildContext context) async {
+    FocusScope.of(context).unfocus();
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate:
@@ -778,28 +852,39 @@ class RegisterController extends GetxController {
         final formData = FormData.fromMap(formMap);
 
         if (profileImage.value != null) {
-          formData.files.add(
-            MapEntry(
-              'profile_picture',
-              await MultipartFile.fromFile(
-                profileImage.value!.path,
-                filename: profileImage.value!.path.split('/').last,
+          if (await profileImage.value!.exists()) {
+            formData.files.add(
+              MapEntry(
+                'profile_picture',
+                await MultipartFile.fromFile(
+                  profileImage.value!.path,
+                  filename: profileImage.value!.path.split('/').last,
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            debugPrint(
+              'Profile image file not found: ${profileImage.value!.path}',
+            );
+            // Optionally show error or proceed without image
+          }
         }
 
         if (businessLogos.isNotEmpty) {
           for (var file in businessLogos) {
-            formData.files.add(
-              MapEntry(
-                'business_logo',
-                await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+            if (await file.exists()) {
+              formData.files.add(
+                MapEntry(
+                  'business_logo',
+                  await MultipartFile.fromFile(
+                    file.path,
+                    filename: file.path.split('/').last,
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              debugPrint('Business logo file not found: ${file.path}');
+            }
           }
         }
 
@@ -848,7 +933,24 @@ class RegisterController extends GetxController {
           colorText: Colors.white,
         );
       } else {
-        _showError(result['message'] ?? 'Registration failed');
+        String errorMsg = result['message'] ?? 'Registration failed';
+
+        // Parse specific validation errors if available
+        if (result['errors'] != null && result['errors'] is List) {
+          final errors = result['errors'] as List;
+          if (errors.isNotEmpty) {
+            // Combine all error messages or just show the first one
+            // Showing all might be too long for snackbar, so let's show the first
+            // distinct message or a summary
+            final firstError = errors.first;
+            if (firstError is Map && firstError['message'] != null) {
+              errorMsg = firstError['message'];
+            } else if (firstError is String) {
+              errorMsg = firstError;
+            }
+          }
+        }
+        _showError(errorMsg);
       }
     } catch (e) {
       isLoading.value = false;
@@ -888,6 +990,24 @@ class RegisterController extends GetxController {
     designationController.dispose();
     departmentController.dispose();
     experienceController.dispose();
+
+    // Dispose Focus Nodes
+    fullNameFocusNode.dispose();
+    surnameFocusNode.dispose();
+    emailFocusNode.dispose();
+    phoneFocusNode.dispose();
+    passwordFocusNode.dispose();
+    confirmPasswordFocusNode.dispose();
+    addressFocusNode.dispose();
+    zipcodeFocusNode.dispose();
+    qualificationFocusNode.dispose();
+    institutionFocusNode.dispose();
+    fieldOfStudyFocusNode.dispose();
+    startYearFocusNode.dispose();
+    passingYearFocusNode.dispose();
+    currentYearFocusNode.dispose();
+    gradeFocusNode.dispose();
+
     super.onClose();
   }
 }

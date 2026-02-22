@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/utils/date_utils.dart';
 import '../../widgets/user_avatar.dart';
 import '../../routes/app_routes.dart';
 import 'package:get/get.dart';
@@ -146,7 +146,7 @@ class PostDetailView extends StatelessWidget {
                                 ),
                                 SizedBox(width: 1.w),
                                 Text(
-                                  'Posted ${_formatDate(post['created_at'])}',
+                                  'Posted ${AppDateUtils.formatTimeAgo(post['created_at'])}',
                                   style: TextStyle(
                                     color: Colors.grey[600],
                                     fontSize: 13.sp,
@@ -332,30 +332,6 @@ class PostDetailView extends StatelessWidget {
     );
   }
 
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '';
-    try {
-      final date = DateTime.parse(dateStr);
-      final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inDays == 0) {
-        if (difference.inHours == 0) {
-          return '${difference.inMinutes} minutes ago';
-        }
-        return '${difference.inHours} hours ago';
-      } else if (difference.inDays == 1) {
-        return 'Yesterday';
-      } else if (difference.inDays < 7) {
-        return '${difference.inDays} days ago';
-      } else {
-        return DateFormat('MMM d, yyyy').format(date);
-      }
-    } catch (e) {
-      return dateStr;
-    }
-  }
-
   IconData _getPostTypeIcon(String? postType) {
     switch (postType) {
       case 'job_seeking':
@@ -407,6 +383,7 @@ class PostDetailView extends StatelessWidget {
             radius: 24,
             imageUrl: post['author']?['profile_picture'],
             name: post['author']?['full_name'] ?? 'U',
+            enablePopup: true,
           ),
           SizedBox(width: 3.w),
           Expanded(
@@ -577,7 +554,9 @@ class PostDetailView extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                _formatCommentTime(comment['created_at']),
+                                AppDateUtils.formatTimeAgo(
+                                  comment['created_at'],
+                                ),
                                 style: TextStyle(
                                   fontSize: 11.sp,
                                   color: Colors.grey[600],
@@ -623,7 +602,7 @@ class PostDetailView extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            _formatDate(comment['created_at']),
+                            AppDateUtils.formatDate(comment['created_at']),
                             style: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 11.sp,
@@ -640,27 +619,6 @@ class PostDetailView extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatCommentTime(dynamic createdAt) {
-    if (createdAt == null) return '';
-    try {
-      final date = DateTime.parse(createdAt.toString());
-      final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inDays > 0) {
-        return '${difference.inDays}d ago';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}h ago';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m ago';
-      } else {
-        return 'Just now';
-      }
-    } catch (e) {
-      return '';
-    }
   }
 
   bool _canModifyComment(Map<String, dynamic> comment) {

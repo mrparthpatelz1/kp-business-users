@@ -4,6 +4,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import 'announcements_controller.dart';
+import '../../core/utils/date_utils.dart';
 
 class AnnouncementsView extends GetView<AnnouncementsController> {
   const AnnouncementsView({super.key});
@@ -202,11 +203,6 @@ class AnnouncementsView extends GetView<AnnouncementsController> {
 
   String _formatDate(String? dateString) {
     if (dateString == null) return '';
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (_) {
-      return dateString;
-    }
+    return AppDateUtils.formatDate(dateString);
   }
 }

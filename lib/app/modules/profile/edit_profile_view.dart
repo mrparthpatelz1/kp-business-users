@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:intl/intl.dart';
+import '../../core/utils/date_utils.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/services/auth_service.dart';
@@ -279,9 +279,10 @@ class EditProfileView extends GetView<EditProfileController> {
                         ),
                         child: Text(
                           controller.dateOfBirth.value != null
-                              ? DateFormat(
-                                  'dd/MM/yyyy',
-                                ).format(controller.dateOfBirth.value!)
+                              ? AppDateUtils.formatDateSlash(
+                                  controller.dateOfBirth.value!
+                                      .toIso8601String(),
+                                )
                               : 'Select date',
                           style: TextStyle(
                             color: controller.dateOfBirth.value != null
@@ -938,9 +939,9 @@ class EditProfileView extends GetView<EditProfileController> {
                       ),
                       child: Text(
                         controller.jobJoinDate.value != null
-                            ? DateFormat(
-                                'dd/MM/yyyy',
-                              ).format(controller.jobJoinDate.value!)
+                            ? AppDateUtils.formatDateSlash(
+                                controller.jobJoinDate.value!.toIso8601String(),
+                              )
                             : 'Select date',
                         style: TextStyle(
                           color: controller.jobJoinDate.value != null
@@ -1136,8 +1137,6 @@ class EditProfileView extends GetView<EditProfileController> {
                       onChanged: (item) {
                         if (item != null) {
                           form.selectedCategoryId.value = item['id'];
-                          // Reset subcategories when category changes
-                          form.selectedSubcategoryIds.clear();
                         }
                       },
                       validator: (v) => v == null ? 'Required' : null,
@@ -1149,72 +1148,63 @@ class EditProfileView extends GetView<EditProfileController> {
                   ),
                   SizedBox(height: 2.h),
 
-                  // Business Subcategories
-                  Obx(() {
-                    if (form.selectedCategoryId.value == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return FutureBuilder<List<Map<String, dynamic>>>(
-                      future: controller.getSubcategoriesForForm(
-                        form.selectedCategoryId.value!,
-                      ),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        }
-                        final subcategories = snapshot.data!;
-
-                        return DropdownSearch<
-                          Map<String, dynamic>
-                        >.multiSelection(
-                          items: (filter, _) => subcategories,
-                          selectedItems: subcategories
-                              .where(
-                                (s) => form.selectedSubcategoryIds.contains(
-                                  s['id'],
-                                ),
-                              )
-                              .toList(),
-                          itemAsString: (item) =>
-                              item['subcategory_name'] ?? '',
-                          compareFn: (a, b) => a['id'] == b['id'],
-                          decoratorProps: const DropDownDecoratorProps(
-                            decoration: InputDecoration(
-                              labelText: 'Business Subcategories',
-                              prefixIcon: Icon(Icons.category_outlined),
-                              hintText: 'Select multiple',
-                            ),
+                  // Business Subcategories (all, unlinked from category)
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: controller.getSubcategoriesForForm(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                          popupProps: PopupPropsMultiSelection.menu(
-                            showSearchBox: true,
-                            containerBuilder: (context, popupWidget) =>
-                                SafeArea(child: popupWidget),
-                            searchFieldProps: const TextFieldProps(
-                              decoration: InputDecoration(
-                                hintText: 'Search subcategories...',
-                                prefixIcon: Icon(Icons.search),
-                              ),
-                            ),
-                          ),
-                          onChanged: (items) {
-                            form.selectedSubcategoryIds.value = items
-                                .map((i) => i['id'] as int)
-                                .toList();
-                          },
-                          onBeforePopupOpening: (selectedItems) async {
-                            FocusScope.of(context).unfocus();
-                            return true;
-                          },
                         );
-                      },
-                    );
-                  }),
+                      }
+                      final subcategories = snapshot.data!;
+
+                      return DropdownSearch<
+                        Map<String, dynamic>
+                      >.multiSelection(
+                        items: (filter, _) => subcategories,
+                        selectedItems: subcategories
+                            .where(
+                              (s) =>
+                                  form.selectedSubcategoryIds.contains(s['id']),
+                            )
+                            .toList(),
+                        itemAsString: (item) => item['subcategory_name'] ?? '',
+                        compareFn: (a, b) => a['id'] == b['id'],
+                        decoratorProps: const DropDownDecoratorProps(
+                          decoration: InputDecoration(
+                            labelText: 'Business Subcategories',
+                            prefixIcon: Icon(Icons.category_outlined),
+                            hintText: 'Select multiple',
+                          ),
+                        ),
+                        popupProps: PopupPropsMultiSelection.menu(
+                          showSearchBox: true,
+                          containerBuilder: (context, popupWidget) =>
+                              SafeArea(child: popupWidget),
+                          searchFieldProps: const TextFieldProps(
+                            decoration: InputDecoration(
+                              hintText: 'Search subcategories...',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                          ),
+                        ),
+                        onChanged: (items) {
+                          form.selectedSubcategoryIds.value = items
+                              .map((i) => i['id'] as int)
+                              .toList();
+                        },
+                        onBeforePopupOpening: (selectedItems) async {
+                          FocusScope.of(context).unfocus();
+                          return true;
+                        },
+                      );
+                    },
+                  ),
                   SizedBox(height: 2.h),
 
                   TextFormField(

@@ -6,6 +6,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/utils/date_utils.dart';
 import 'chat_controller.dart';
 import '../../routes/app_routes.dart';
 
@@ -27,10 +28,13 @@ class _ChatDetailViewState extends State<ChatDetailView> {
   void initState() {
     super.initState();
     final args = Get.arguments as Map<String, dynamic>;
-    conversationId = args['conversationId'];
-    receiverId = args['receiverId'];
-    receiverName = args['receiverName'] ?? 'Chat';
-    receiverPhoto = args['receiverPhoto'];
+    conversationId = args['conversationId'].toString();
+    final rawReceiverId = args['receiverId'];
+    receiverId = rawReceiverId is int
+        ? rawReceiverId
+        : int.tryParse(rawReceiverId?.toString() ?? '') ?? 0;
+    receiverName = args['receiverName']?.toString() ?? 'Chat';
+    receiverPhoto = args['receiverPhoto']?.toString();
 
     controller.loadMessages(conversationId, receiverId);
   }
@@ -234,14 +238,7 @@ class _ChatDetailViewState extends State<ChatDetailView> {
 
     // Document attachment
     return GestureDetector(
-      onTap: () {
-        // Could open URL in browser
-        Get.snackbar(
-          'File',
-          attachmentName,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-      },
+      onTap: () => controller.viewAttachment(attachmentUrl, attachmentName),
       child: Container(
         padding: EdgeInsets.all(2.w),
         decoration: BoxDecoration(
@@ -323,7 +320,14 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                 radius: 18,
                 backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
                 backgroundImage: receiverPhoto != null
-                    ? NetworkImage(ApiConstants.getFullUrl(receiverPhoto!))
+                    ? NetworkImage(
+                        ApiConstants.getFullUrl(
+                          (receiverPhoto!.startsWith('/') ||
+                                  receiverPhoto!.startsWith('http'))
+                              ? receiverPhoto!
+                              : '/uploads/profiles/$receiverPhoto',
+                        ),
+                      )
                     : null,
                 child: receiverPhoto == null
                     ? Text(
@@ -472,13 +476,9 @@ class _ChatDetailViewState extends State<ChatDetailView> {
                                       ),
                                     ),
                                   Text(
-                                    DateTime.tryParse(
-                                          message['created_at'].toString(),
-                                        )?.toLocal().toString().substring(
-                                          11,
-                                          16,
-                                        ) ??
-                                        '',
+                                    AppDateUtils.formatTime(
+                                      message['created_at'].toString(),
+                                    ),
                                     style: TextStyle(
                                       color: isMe
                                           ? Colors.white.withOpacity(0.9)

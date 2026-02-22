@@ -206,6 +206,7 @@ class DirectoryView extends GetView<DirectoryController> {
                 imageUrl: user['profile_picture'],
                 name: user['full_name'] ?? user['surname'],
                 isBusiness: isBusinessUser,
+                enablePopup: true,
               ),
               SizedBox(width: 4.w),
 

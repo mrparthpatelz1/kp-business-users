@@ -4,6 +4,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/user_avatar.dart';
 import '../main/post_detail_view.dart';
+import '../../core/utils/date_utils.dart';
 
 /// Shared Post Card Widget - Used by both PostsView and HomeTab
 class PostCard extends StatelessWidget {
@@ -44,6 +45,7 @@ class PostCard extends StatelessWidget {
                       postType,
                     ).withOpacity(0.1),
                     iconColor: getPostTypeColor(postType),
+                    enablePopup: true,
                   ),
                   SizedBox(width: 3.w),
                   Expanded(
@@ -58,7 +60,7 @@ class PostCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          _formatDate(post['created_at']),
+                          AppDateUtils.formatTimeAgo(post['created_at']),
                           style: Theme.of(
                             context,
                           ).textTheme.bodySmall?.copyWith(color: Colors.grey),
@@ -236,27 +238,6 @@ class PostCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _formatDate(String? dateStr) {
-    if (dateStr == null) return '';
-    try {
-      final date = DateTime.parse(dateStr);
-      final now = DateTime.now();
-      final diff = now.difference(date);
-
-      if (diff.inMinutes < 60) {
-        return '${diff.inMinutes}m ago';
-      } else if (diff.inHours < 24) {
-        return '${diff.inHours}h ago';
-      } else if (diff.inDays < 7) {
-        return '${diff.inDays}d ago';
-      } else {
-        return '${date.day}/${date.month}/${date.year}';
-      }
-    } catch (e) {
-      return '';
-    }
   }
 
   void _showPostDetail(BuildContext context) {

@@ -233,16 +233,16 @@ class EditProfileController extends GetxController {
 
   Future<void> loadJobSubcategories(int categoryId) async {
     selectedJobCategoryId.value = categoryId;
-    selectedJobSubcategoryIds.clear();
-    jobSubcategories.value = await _masterService.getJobSubcategories(
-      categoryId,
-    );
+    // Subcategories are no longer filtered by category — load all
+    if (jobSubcategories.isEmpty) {
+      jobSubcategories.value = await _masterService.getJobSubcategories();
+    }
   }
 
-  Future<List<Map<String, dynamic>>> getSubcategoriesForForm(
-    int categoryId,
-  ) async {
-    return await _masterService.getBusinessSubcategories(categoryId);
+  Future<List<Map<String, dynamic>>> getSubcategoriesForForm([
+    int? categoryId,
+  ]) async {
+    return await _masterService.getBusinessSubcategories();
   }
 
   Future<void> pickProfileImage() async {
@@ -427,7 +427,6 @@ class EditProfileController extends GetxController {
       userType.value = user['user_type']?.toString().toLowerCase() ?? '';
 
       // Personal Info
-      // Personal Info
       fullNameController.text = user['full_name'] ?? '';
       surnameController.text = user['surname'] ?? '';
       phoneController.text = user['phone'] ?? '';
@@ -436,12 +435,15 @@ class EditProfileController extends GetxController {
       bloodGroup.value = user['blood_group'] ?? '';
 
       // Date of Birth
-      if (user['date_of_birth'] != null) {
+      final dobStr = user['date_of_birth']?.toString();
+      if (dobStr != null && dobStr.length >= 10) {
         try {
-          dateOfBirth.value = DateTime.parse(user['date_of_birth']);
+          dateOfBirth.value = DateTime.parse(dobStr.substring(0, 10));
         } catch (e) {
           dateOfBirth.value = null;
         }
+      } else {
+        dateOfBirth.value = null;
       }
 
       // Native Village
@@ -540,9 +542,10 @@ class EditProfileController extends GetxController {
             job['years_of_experience']?.toString() ?? '';
 
         // Parse joining date
-        if (job['date_of_joining'] != null) {
+        final joinDateStr = job['date_of_joining']?.toString();
+        if (joinDateStr != null && joinDateStr.length >= 10) {
           try {
-            jobJoinDate.value = DateTime.parse(job['date_of_joining']);
+            jobJoinDate.value = DateTime.parse(joinDateStr.substring(0, 10));
           } catch (e) {
             jobJoinDate.value = null;
           }
@@ -566,8 +569,6 @@ class EditProfileController extends GetxController {
         }
       }
 
-      // Business Details
-      businessForms.clear();
       // Business Details
       businessForms.clear();
       final businesses =

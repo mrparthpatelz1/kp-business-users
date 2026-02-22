@@ -42,30 +42,21 @@ class DirectoryController extends GetxController {
     try {
       businessCategories.value = await _masterService.getBusinessCategories();
       jobCategories.value = await _masterService.getJobCategories();
+      // Load all subcategories upfront (unlinked from category)
+      businessSubcategories.value = await _masterService
+          .getBusinessSubcategories();
+      jobSubcategories.value = await _masterService.getJobSubcategories();
     } catch (e) {
       debugPrint('Error loading master data: $e');
     }
   }
 
-  Future<void> loadBusinessSubcategories(int categoryId) async {
-    try {
-      businessSubcategories.value = await _masterService
-          .getBusinessSubcategories(categoryId);
-    } catch (e) {
-      debugPrint('Error loading business subcategories: $e');
-      businessSubcategories.value = [];
-    }
+  Future<void> loadBusinessSubcategories([int? categoryId]) async {
+    // No-op: subcategories are now preloaded at startup
   }
 
-  Future<void> loadJobSubcategories(int categoryId) async {
-    try {
-      jobSubcategories.value = await _masterService.getJobSubcategories(
-        categoryId,
-      );
-    } catch (e) {
-      debugPrint('Error loading job subcategories: $e');
-      jobSubcategories.value = [];
-    }
+  Future<void> loadJobSubcategories([int? categoryId]) async {
+    // No-op: subcategories are now preloaded at startup
   }
 
   Future<void> loadUsers({bool refresh = false}) async {
@@ -155,13 +146,7 @@ class DirectoryController extends GetxController {
 
   void filterByBusinessCategory(String categoryId) {
     selectedBusinessCategory.value = categoryId;
-    selectedBusinessSubcategory.value =
-        ''; // Clear subcategory when category changes
-    if (categoryId.isNotEmpty) {
-      loadBusinessSubcategories(int.parse(categoryId));
-    } else {
-      businessSubcategories.value = [];
-    }
+    selectedBusinessSubcategory.value = ''; // Clear selected subcategory
     loadUsers(refresh: true);
   }
 
@@ -172,13 +157,7 @@ class DirectoryController extends GetxController {
 
   void filterByJobCategory(String categoryId) {
     selectedJobCategory.value = categoryId;
-    selectedJobSubcategory.value =
-        ''; // Clear subcategory when category changes
-    if (categoryId.isNotEmpty) {
-      loadJobSubcategories(int.parse(categoryId));
-    } else {
-      jobSubcategories.value = [];
-    }
+    selectedJobSubcategory.value = ''; // Clear selected subcategory
     loadUsers(refresh: true);
   }
 

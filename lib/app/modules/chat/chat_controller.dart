@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/providers/api_provider.dart';
 import '../../data/services/socket_service.dart';
@@ -168,8 +169,15 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
     _socketService.socket.on('message_read', (data) {
       final readConversationId = data['conversationId'].toString();
+      // The `readerId` tells us WHO just read the messages.
+      // We only want to show "seen" on our outgoing messages when the
+      // OTHER person (the receiver) reads them — not when we ourselves
+      // emit mark_read to clear our own unread badge.
+      final readerId = data['userId']?.toString();
+      final bool otherPersonRead =
+          readerId != null && readerId != currentUserId.toString();
 
-      if (readConversationId == currentConversationId) {
+      if (readConversationId == currentConversationId && otherPersonRead) {
         // Mark all my messages as read in the current view
         bool changed = false;
 
@@ -461,6 +469,37 @@ class ChatController extends GetxController with WidgetsBindingObserver {
       Get.snackbar('Error', 'Failed to upload file');
     }
     isUploading.value = false;
+  }
+
+  /// View an attachment (downloads to temp and opens)
+  Future<void> viewAttachment(String url, String fileName) async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final savePath = '${directory.path}/$fileName';
+      final fullUrl = ApiConstants.getFullUrl(url);
+
+      // Skip download if already exists (optional, but good for performance)
+      final file = File(savePath);
+      if (!await file.exists()) {
+        await _api.download(fullUrl, savePath);
+      }
+
+      await OpenFile.open(savePath);
+    } catch (e) {
+      debugPrint('View Attachment Error: $e');
+      // If temporary file fails, try opening via browser
+      try {
+        final fullUrl = ApiConstants.getFullUrl(url);
+        final uri = Uri.parse(fullUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          Get.snackbar('Error', 'Could not open file');
+        }
+      } catch (e2) {
+        Get.snackbar('Error', 'Could not open file');
+      }
+    }
   }
 
   /// Download an attachment to the device

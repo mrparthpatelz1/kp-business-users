@@ -55,6 +55,11 @@ class StorageService extends GetxService {
     _storage.write('last_viewed_announcements_time', timestamp);
   }
 
+  String? get lastShownAnnouncementPopupId =>
+      _storage.read('last_shown_announcement_popup_id');
+  set lastShownAnnouncementPopupId(String? value) =>
+      _storage.write('last_shown_announcement_popup_id', value);
+
   // Helper to extract numeric User ID from JWT token
   // This bypasses the issue where API returns UUID as 'id' in user object
   int getUserIdFromToken() {

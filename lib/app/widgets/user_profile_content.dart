@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/date_utils.dart';
 import 'user_avatar.dart';
 import '../modules/profile/profile_controller.dart';
 import '../modules/chat/chat_controller.dart';
@@ -203,6 +203,7 @@ class UserProfileContent extends StatelessWidget {
                     radius: 35,
                     imageUrl: user['profile_picture'],
                     name: user['full_name'] ?? 'U',
+                    enablePopup: true,
                   ),
                   SizedBox(width: 4.w),
                   // Info
@@ -465,12 +466,7 @@ class UserProfileContent extends StatelessWidget {
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd-MM-yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+    return AppDateUtils.formatDate(dateStr);
   }
 
   String _formatPostType(String? type) {

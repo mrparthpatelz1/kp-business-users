@@ -18,6 +18,9 @@ import '../modules/posts/create_post_view.dart';
 import '../modules/chat/chat_list_view.dart';
 import '../modules/chat/chat_detail_view.dart';
 import '../modules/main/post_detail_view.dart';
+import '../modules/auth/forgot_password/forgot_password_view.dart';
+import '../modules/announcements/announcements_view.dart';
+import '../modules/announcements/announcements_binding.dart';
 
 class AppPages {
   AppPages._();
@@ -68,6 +71,15 @@ class AppPages {
     GetPage(
       name: Routes.POST_DETAIL,
       page: () => PostDetailView(post: Get.arguments),
+    ),
+    GetPage(
+      name: Routes.FORGOT_PASSWORD,
+      page: () => const ForgotPasswordView(),
+    ),
+    GetPage(
+      name: Routes.ANNOUNCEMENTS,
+      page: () => const AnnouncementsView(),
+      binding: AnnouncementsBinding(),
     ),
   ];
 }

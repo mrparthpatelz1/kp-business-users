@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../routes/app_routes.dart';
 import 'login_controller.dart';
 
 class LoginView extends GetView<LoginController> {
@@ -187,9 +188,7 @@ class LoginView extends GetView<LoginController> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Implement forgot password
-                      },
+                      onPressed: () => Get.toNamed(Routes.FORGOT_PASSWORD),
                       child: const Text('Forgot Password?'),
                     ),
                   ),

@@ -4,7 +4,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../widgets/user_profile_content.dart';
 import 'other_user_profile_controller.dart';
 import '../../core/theme/app_theme.dart';
-import 'package:intl/intl.dart';
+import '../../core/utils/date_utils.dart';
 
 class OtherUserProfileView extends GetView<OtherUserProfileController> {
   const OtherUserProfileView({super.key});
@@ -167,12 +167,7 @@ class OtherUserProfileView extends GetView<OtherUserProfileController> {
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd-MM-yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+    return AppDateUtils.formatDate(dateStr);
   }
 
   String _formatPostType(String? type) {

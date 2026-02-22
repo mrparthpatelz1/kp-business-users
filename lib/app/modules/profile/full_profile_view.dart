@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
-import 'package:intl/intl.dart';
+import '../../core/utils/date_utils.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import 'profile_controller.dart';
@@ -82,6 +82,12 @@ class FullProfileView extends StatelessWidget {
             _formatDate(user['date_of_birth']?.toString()),
           ),
           _buildInfoRow('Blood Group', user['blood_group'] ?? 'N/A'),
+          _buildInfoRow('Native Village', () {
+            final v = user['native_village'];
+            if (v == null) return 'N/A';
+            if (v is Map) return v['name']?.toString() ?? 'N/A';
+            return v.toString();
+          }()),
         ]),
         _buildSection('Current Address', Icons.home, [
           _buildInfoRow('Address', livingAddress ?? 'N/A'),
@@ -275,9 +281,17 @@ class FullProfileView extends StatelessWidget {
             business['category']?['name'] ?? business['category_name'] ?? 'N/A',
           ),
           _buildSubcategoriesInfo(business['subcategories']),
-          if (business['description'] != null &&
-              business['description'].toString().isNotEmpty)
-            _buildInfoRow('Description', business['description']),
+          if ((business['description'] ?? business['business_description']) !=
+                  null &&
+              (business['description'] ?? business['business_description'])
+                  .toString()
+                  .trim()
+                  .isNotEmpty)
+            _buildInfoRow(
+              'Description',
+              (business['description'] ?? business['business_description'])
+                  .toString(),
+            ),
           _buildInfoRow(
             'Address',
             business['address'] ?? business['business_address'] ?? 'N/A',
@@ -393,11 +407,6 @@ class FullProfileView extends StatelessWidget {
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd-MM-yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+    return AppDateUtils.formatDate(dateStr);
   }
 }

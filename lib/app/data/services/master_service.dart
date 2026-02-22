@@ -41,14 +41,10 @@ class MasterService extends GetxService {
     }
   }
 
-  // Get business subcategories
-  Future<List<Map<String, dynamic>>> getBusinessSubcategories(
-    int categoryId,
-  ) async {
+  // Get all business subcategories (unlinked from category)
+  Future<List<Map<String, dynamic>>> getBusinessSubcategories() async {
     try {
-      final response = await _api.get(
-        '${ApiConstants.businessSubcategories}/$categoryId',
-      );
+      final response = await _api.get(ApiConstants.businessSubcategories);
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (_) {
       return [];
@@ -75,12 +71,10 @@ class MasterService extends GetxService {
     }
   }
 
-  // Get job subcategories
-  Future<List<Map<String, dynamic>>> getJobSubcategories(int categoryId) async {
+  // Get all job subcategories (unlinked from category)
+  Future<List<Map<String, dynamic>>> getJobSubcategories() async {
     try {
-      final response = await _api.get(
-        '${ApiConstants.jobSubcategories}/$categoryId',
-      );
+      final response = await _api.get(ApiConstants.jobSubcategories);
       return List<Map<String, dynamic>>.from(response.data['data']);
     } catch (_) {
       return [];

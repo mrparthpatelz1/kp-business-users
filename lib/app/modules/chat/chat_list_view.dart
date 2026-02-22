@@ -69,7 +69,14 @@ class ChatListView extends StatelessWidget {
                           ) ??
                           0;
                 final String? lastMessage = conversation['last_message'];
-                final String? photoPath = otherUser['photo'];
+                final String? rawPhoto = otherUser['photo'];
+                // Normalize: if the server returned a bare filename (no path),
+                // prepend the uploads folder so getFullUrl builds the correct URL.
+                final String? photoPath = rawPhoto == null
+                    ? null
+                    : (rawPhoto.startsWith('/') || rawPhoto.startsWith('http'))
+                    ? rawPhoto
+                    : '/uploads/profiles/$rawPhoto';
 
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
