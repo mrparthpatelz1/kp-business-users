@@ -174,10 +174,11 @@ class NotificationService extends GetxService {
 
     debugPrint('Notification permission: ${settings.authorizationStatus}');
 
-    // iOS: Set foreground presentation options to show banner/alert
+    // iOS: Set foreground presentation options
+    // Disable 'alert' to prevent duplicate notifications (since we handle them manually with flutter_local_notifications)
     if (Platform.isIOS) {
       await _messaging.setForegroundNotificationPresentationOptions(
-        alert: true, // Show banner/alert
+        alert: false, // Don't show system banner
         badge: true,
         sound: true,
       );
