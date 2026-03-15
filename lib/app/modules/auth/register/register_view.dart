@@ -135,7 +135,38 @@ class RegisterView extends GetView<RegisterController> {
               'Fill in your basic details',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            SizedBox(height: 3.h),
+            SizedBox(height: 1.h),
+            Container(
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.primaryColor.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppTheme.primaryColor,
+                    size: 18.sp,
+                  ),
+                  SizedBox(width: 2.w),
+                  Expanded(
+                    child: Text(
+                      'These details are required to verify your identity within our closed community and provide localized support.',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: AppTheme.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 2.h),
 
             // Profile Picture Picker
             Center(
@@ -425,6 +456,37 @@ class RegisterView extends GetView<RegisterController> {
             ),
             SizedBox(height: 2.h),
 
+            // EULA Checkbox
+            Obx(
+              () => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: controller.acceptedEula.value,
+                    onChanged: (val) {
+                      if (val != null) {
+                        controller.acceptedEula.value = val;
+                      }
+                    },
+                    activeColor: AppTheme.primaryColor,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12.0),
+                      child: Text(
+                        'I agree to the Terms of Service. I understand there is zero tolerance for objectionable content or abusive users.',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 1.h),
+
             // Password
             Obx(
               () => TextFormField(
@@ -505,7 +567,38 @@ class RegisterView extends GetView<RegisterController> {
               'Where do you live?',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            SizedBox(height: 3.h),
+            SizedBox(height: 1.h),
+            Container(
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.primaryColor.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppTheme.primaryColor,
+                    size: 18.sp,
+                  ),
+                  SizedBox(width: 2.w),
+                  Expanded(
+                    child: Text(
+                      'Your address helps us connect you with nearby community members and local events.',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: AppTheme.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 2.h),
 
             // Error message
             Obx(

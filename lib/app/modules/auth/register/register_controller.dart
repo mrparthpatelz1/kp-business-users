@@ -107,6 +107,7 @@ class RegisterController extends GetxController {
   final RxBool obscureConfirmPassword = true.obs;
   final RxBool emailAvailable = true.obs;
   final RxBool phoneAvailable = true.obs;
+  final RxBool acceptedEula = false.obs;
 
   // Country dial codes
   final List<Map<String, String>> countryDialCodes = [
@@ -419,6 +420,10 @@ class RegisterController extends GetxController {
         }
         if (dateOfBirth.value == null) {
           _showError('Please select your date of birth');
+          return;
+        }
+        if (!acceptedEula.value) {
+          _showError('Please accept the Terms of Service to continue');
           return;
         }
 

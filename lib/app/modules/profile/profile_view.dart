@@ -40,10 +40,92 @@ class ProfileView extends GetView<ProfileController> {
           onRefresh: () async => await controller.refreshProfile(),
           child: SingleChildScrollView(
             padding: EdgeInsets.all(4.w),
-            child: UserProfileContent(user: user, isOwnProfile: true),
+            child: Column(
+              children: [
+                UserProfileContent(user: user, isOwnProfile: true),
+                SizedBox(height: 2.h),
+                _buildBlockedUsersButton(context),
+                SizedBox(height: 2.h),
+                _buildDeleteAccountButton(context),
+                SizedBox(height: 4.h), // padding at bottom
+              ],
+            ),
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildBlockedUsersButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.block, color: Colors.grey),
+        label: const Text(
+          'Manage Blocked Users',
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.grey),
+          padding: EdgeInsets.symmetric(vertical: 2.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => Get.toNamed('/blocked-users'),
+      ),
+    );
+  }
+
+  Widget _buildDeleteAccountButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.delete_forever, color: Colors.red),
+        label: const Text(
+          'Delete My Account',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.red),
+          padding: EdgeInsets.symmetric(vertical: 2.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => _showDeleteAccountDialog(context),
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text(
+          'Delete Account',
+          style: TextStyle(color: Colors.red),
+        ),
+        content: const Text(
+          'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be cleared.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back(); // close dialog
+              controller.deleteAccount();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'Delete Permanently',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

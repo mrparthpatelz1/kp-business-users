@@ -289,4 +289,93 @@ class PostsController extends GetxController
       return {'success': false, 'message': 'Failed to delete post'};
     }
   }
+
+  Future<void> reportPost(dynamic postId, String reason) async {
+    try {
+      final response = await _api.post(
+        '/reports',
+        data: {'post_id': postId, 'reason': reason},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Get.snackbar(
+          'Report Submitted',
+          'Thank you for reporting. Our admins will review this post within 24 hours.',
+          backgroundColor: Get.theme.primaryColor,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          response.data['message'] ?? 'Failed to submit report. Please try again.',
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error reporting post: $e');
+      String errorMsg = 'An error occurred while reporting the post.';
+      if (e is DioException && e.response?.data != null) {
+        errorMsg = e.response!.data['message'] ?? errorMsg;
+      }
+      Get.snackbar(
+        'Error',
+        errorMsg,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> blockUser(dynamic userId, String userName) async {
+    try {
+      final response = await _api.post(
+        '/users/block',
+        data: {'blocked_user_id': userId},
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Immediately remove their posts from local state
+        _removeBlockedUserPostsLocally(userId);
+
+        Get.snackbar(
+          'User Blocked',
+          '$userName has been blocked. Their posts will no longer appear in your feed.',
+          backgroundColor: Get.theme.primaryColor,
+          colorText: Get.theme.colorScheme.onPrimary,
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          response.data['message'] ?? 'Failed to block user. Please try again.',
+          backgroundColor: Get.theme.colorScheme.error,
+          colorText: Get.theme.colorScheme.onError,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error blocking user: $e');
+      String errorMsg = 'An error occurred while blocking the user.';
+      if (e is DioException && e.response?.data != null) {
+        errorMsg = e.response!.data['message'] ?? errorMsg;
+      }
+      Get.snackbar(
+        'Error',
+        errorMsg,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  void _removeBlockedUserPostsLocally(dynamic userId) {
+    posts.removeWhere((p) => p['user']?['id'] == userId);
+    homeScreenPosts.removeWhere((p) => p['user']?['id'] == userId);
+    adsList.removeWhere((p) => p['user']?['id'] == userId);
+  }
 }

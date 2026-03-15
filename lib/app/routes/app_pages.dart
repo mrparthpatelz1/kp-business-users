@@ -21,6 +21,8 @@ import '../modules/main/post_detail_view.dart';
 import '../modules/auth/forgot_password/forgot_password_view.dart';
 import '../modules/announcements/announcements_view.dart';
 import '../modules/announcements/announcements_binding.dart';
+import '../modules/profile/blocked_users_view.dart';
+import '../modules/profile/blocked_users_controller.dart';
 
 class AppPages {
   AppPages._();
@@ -80,6 +82,13 @@ class AppPages {
       name: Routes.ANNOUNCEMENTS,
       page: () => const AnnouncementsView(),
       binding: AnnouncementsBinding(),
+    ),
+    GetPage(
+      name: Routes.BLOCKED_USERS,
+      page: () => const BlockedUsersView(),
+      binding: BindingsBuilder(() {
+        Get.put(BlockedUsersController());
+      }),
     ),
   ];
 }

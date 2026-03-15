@@ -5,6 +5,7 @@ import '../core/theme/app_theme.dart';
 import '../core/utils/date_utils.dart';
 import 'user_avatar.dart';
 import '../modules/profile/profile_controller.dart';
+import '../modules/profile/other_user_profile_controller.dart';
 import '../modules/chat/chat_controller.dart';
 
 import '../routes/app_routes.dart';
@@ -268,6 +269,41 @@ class UserProfileContent extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (!isOwnProfile && Get.isRegistered<OtherUserProfileController>())
+                    Obx(() {
+                      final otherController = Get.find<OtherUserProfileController>();
+                      final isBlocked = otherController.isBlocked.value;
+                      return TextButton.icon(
+                        onPressed: () => otherController.toggleBlockStatus(),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 2.w,
+                            vertical: 0,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          backgroundColor: isBlocked ? AppTheme.errorColor.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        icon: Icon(
+                          isBlocked ? Icons.block : Icons.block_flipped,
+                          size: 14.sp,
+                          color: isBlocked ? AppTheme.errorColor : Colors.grey[700],
+                        ),
+                        label: Text(
+                          isBlocked ? 'Unblock' : 'Block',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: isBlocked ? AppTheme.errorColor : Colors.grey[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }),
+                  if (!isOwnProfile && Get.isRegistered<OtherUserProfileController>())
+                    SizedBox(width: 2.w),
                   if (!isOwnProfile && user['numeric_id'] != null)
                     TextButton.icon(
                       onPressed: () {

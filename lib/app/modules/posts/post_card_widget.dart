@@ -4,6 +4,7 @@ import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/user_avatar.dart';
 import '../main/post_detail_view.dart';
+import 'posts_controller.dart';
 import '../../core/utils/date_utils.dart';
 
 /// Shared Post Card Widget - Used by both PostsView and HomeTab
@@ -86,6 +87,8 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  SizedBox(width: 2.w),
+                  _buildMoreMenu(context, post),
                 ],
               ),
               SizedBox(height: compact ? 1.h : 2.h),
@@ -145,6 +148,124 @@ class PostCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMoreMenu(BuildContext context, Map<String, dynamic> post) {
+    // Determine if current user is the owner to show delete/edit instead of report/block
+    // but without full controller access we can just show report/block and handle it in the controller action
+    // For simplicity, we just provide the menu universally.
+    final user = post['user'] as Map<String, dynamic>?;
+    final userName = user?['name'] ?? 'User';
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.grey),
+      onSelected: (value) {
+        if (value == 'report') {
+          // Send to controller or show dialog
+          _showReportDialog(context, post['id']);
+        } else if (value == 'block') {
+          _showBlockDialog(context, user?['id'], userName);
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        const PopupMenuItem<String>(
+          value: 'report',
+          child: Row(
+            children: [
+              Icon(Icons.flag, color: Colors.orange, size: 20),
+              SizedBox(width: 8),
+              Text('Report Post'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'block',
+          child: Row(
+            children: [
+              Icon(Icons.block, color: Colors.red, size: 20),
+              SizedBox(width: 8),
+              Text('Block User'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showReportDialog(BuildContext context, dynamic postId) {
+    String reason = '';
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Report Post'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Why are you reporting this post?'),
+            const SizedBox(height: 10),
+            TextField(
+              decoration: const InputDecoration(
+                hintText: 'e.g. Spam, inappropriate, generic',
+              ),
+              onChanged: (val) => reason = val,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (reason.trim().isEmpty) {
+                Get.snackbar('Error', 'Please enter a reason');
+                return;
+              }
+              Get.back();
+
+              if (Get.isRegistered<PostsController>()) {
+                try {
+                  Get.find<PostsController>().reportPost(postId, reason);
+                } catch (e) {
+                  debugPrint('Failed to call reportPost: $e');
+                }
+              } else {
+                debugPrint('PostsController is not registered');
+              }
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBlockDialog(BuildContext context, dynamic userId, String userName) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('Block $userName?'),
+        content: const Text(
+          'They will not be able to interact with you and their posts will be hidden from your feed.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Get.back();
+
+              if (Get.isRegistered<PostsController>()) {
+                try {
+                  Get.find<PostsController>().blockUser(userId, userName);
+                } catch (e) {
+                  debugPrint('Failed to call blockUser: $e');
+                }
+              } else {
+                debugPrint('PostsController is not registered');
+              }
+            },
+            child: const Text('Block', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

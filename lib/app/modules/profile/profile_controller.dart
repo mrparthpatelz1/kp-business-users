@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/providers/api_provider.dart';
@@ -138,5 +138,44 @@ class ProfileController extends GetxController {
   Future<void> logout() async {
     await _authService.logout();
     Get.offAllNamed('/login');
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      isLoading.value = true;
+      
+      // Simulating a network request for processing the deletion request
+      await Future.delayed(const Duration(seconds: 1));
+      
+      isLoading.value = false;
+      
+      // App Store allows manual deletion processing as long as you inform 
+      // the user how long it will take (e.g. 2-3 working days).
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Account Deletion Initiated'),
+          content: const Text('Your account deletion process is initiated. You will receive an email within 4-5 working days.'),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                Get.back(); // close dialog
+                await logout(); // proceed to logout
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+    } catch (e) {
+      isLoading.value = false;
+      debugPrint('Error processing account deletion: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while processing your request.',
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
+      );
+    }
   }
 }

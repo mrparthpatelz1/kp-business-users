@@ -17,4 +17,5 @@ abstract class Routes {
   static const POST_DETAIL = '/post-detail';
   static const FORGOT_PASSWORD = '/forgot-password';
   static const ANNOUNCEMENTS = '/announcements';
+  static const BLOCKED_USERS = '/blocked-users';
 }
