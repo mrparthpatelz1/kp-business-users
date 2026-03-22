@@ -401,7 +401,7 @@ class FullProfileView extends StatelessWidget {
         'Joining Date',
         _formatDate(job['date_of_joining']?.toString()),
       ),
-      _buildInfoRow('Current Job', job['is_current'] == true ? 'Yes' : 'No'),
+      _buildInfoRow('Current Job', (job['is_current'] == true || job['is_current'] == 1) ? 'Yes' : 'No'),
     ]);
   }
 

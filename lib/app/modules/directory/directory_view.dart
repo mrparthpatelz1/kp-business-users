@@ -95,13 +95,12 @@ class DirectoryView extends GetView<DirectoryController> {
               return RefreshIndicator(
                 onRefresh: () => controller.loadUsers(refresh: true),
                 child: ListView.builder(
+                  controller: controller.scrollController,
                   padding: EdgeInsets.symmetric(horizontal: 4.w),
                   itemCount: controller.users.length + 1,
                   itemBuilder: (context, index) {
                     if (index == controller.users.length) {
-                      if (controller.currentPage.value <
-                          controller.totalPages.value) {
-                        controller.loadMore();
+                      if (controller.isLoadingMore.value) {
                         return const Center(
                           child: Padding(
                             padding: EdgeInsets.all(16),
@@ -111,6 +110,7 @@ class DirectoryView extends GetView<DirectoryController> {
                       }
                       return const SizedBox.shrink();
                     }
+
 
                     return _buildUserCard(context, controller.users[index]);
                   },

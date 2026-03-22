@@ -773,6 +773,17 @@ class EditProfileView extends GetView<EditProfileController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(context, 'Job Details'),
+          SizedBox(height: 1.h),
+          Obx(
+            () => SwitchListTile(
+              title: const Text('Currently Working Here'),
+              subtitle: const Text('Turn off if you are not currently employed'),
+              value: controller.isCurrentlyWorking.value,
+              onChanged: (val) => controller.isCurrentlyWorking.value = val,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppTheme.primaryColor,
+            ),
+          ),
           SizedBox(height: 2.h),
           TextFormField(
             controller: controller.jobCompanyController,

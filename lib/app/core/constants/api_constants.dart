@@ -1,14 +1,14 @@
 class ApiConstants {
-  // static const String baseUrl = 'http://localhost:3000/api/v1'; // For Chrome
-  // static const String baseUrl =
-  // 'https://api.48kadavapatidarparivar.cloud/api/v1'; // Production URL
-  // static const String baseUrl = 'http://10.0.2.2:3000/api/v1'; // Local URL for emulator
-  // static const String baseUrl =
-  //     'http://192.168.1.46:3000/api/v1'; // Local URL for real device
+  // static const String baseUrl = 'http://localhost:3000/api/v2'; // For Chrome
   static const String baseUrl =
-      'https://staging.48kadavapatidarparivar.cloud/api/v1'; // Staging URL
+  'https://api.48kadavapatidarparivar.cloud/api/v2'; // Production URL
+  // static const String baseUrl = 'http://10.0.2.2:3000/api/v2'; // Local URL for emulator
+  // static const String baseUrl =
+  //     'http://192.168.1.51:3000/api/v2'; // Local URL for real device
+  // static const String baseUrl =
+  //     'https://staging.48kadavapatidarparivar.cloud/api/v2'; // Staging URL
 
-  static String get assetBaseUrl => baseUrl.replaceAll('/api/v1', '');
+  static String get assetBaseUrl => baseUrl.replaceAll('/api/v2', '');
 
   /// Helper to get full image URL dynamicallly
   static String getFullUrl(String? path) {

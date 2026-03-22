@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../core/constants/api_constants.dart';
@@ -20,6 +21,7 @@ class DirectoryController extends GetxController {
   final RxString selectedBusinessSubcategory = ''.obs;
   final RxString selectedJobCategory = ''.obs;
   final RxString selectedJobSubcategory = ''.obs;
+  final ScrollController scrollController = ScrollController();
 
   // Master data for filters
   final RxList<Map<String, dynamic>> businessCategories =
@@ -34,8 +36,22 @@ class DirectoryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    scrollController.addListener(_onScroll);
     loadMasterData();
     loadUsers();
+  }
+
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
+  }
+
+  void _onScroll() {
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 200) {
+      loadMore();
+    }
   }
 
   Future<void> loadMasterData() async {

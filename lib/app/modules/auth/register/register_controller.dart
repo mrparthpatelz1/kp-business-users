@@ -9,6 +9,7 @@ import '../../../data/services/auth_service.dart';
 import '../../../data/services/master_service.dart';
 import '../../../data/services/notification_service.dart';
 import '../../../data/services/storage_service.dart';
+import '../../../widgets/eula_dialog.dart';
 
 class BusinessFormState {
   final nameController = TextEditingController();
@@ -313,6 +314,10 @@ class RegisterController extends GetxController {
         ),
       ),
     );
+  }
+
+  void showEula() {
+    Get.dialog(const EulaDialog());
   }
 
   @override

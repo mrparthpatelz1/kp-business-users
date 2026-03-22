@@ -130,6 +130,7 @@ class EditProfileController extends GetxController {
   final RxDouble uploadProgress = 0.0.obs; // 0.0 to 1.0
   final GlobalKey<FormState> jobFormKey = GlobalKey<FormState>();
   final Rx<DateTime?> jobJoinDate = Rx<DateTime?>(null);
+  final RxBool isCurrentlyWorking = true.obs;
 
   // Job Categories
   final RxList<Map<String, dynamic>> jobTypes = <Map<String, dynamic>>[].obs;
@@ -543,6 +544,7 @@ class EditProfileController extends GetxController {
 
         // Parse joining date
         final joinDateStr = job['date_of_joining']?.toString();
+        isCurrentlyWorking.value = (job['is_current'] == true || job['is_current'] == 1);
         if (joinDateStr != null && joinDateStr.length >= 10) {
           try {
             jobJoinDate.value = DateTime.parse(joinDateStr.substring(0, 10));
@@ -659,6 +661,7 @@ class EditProfileController extends GetxController {
           'job_type_id': selectedJobTypeId.value > 0
               ? selectedJobTypeId.value
               : null,
+          'is_current': isCurrentlyWorking.value,
           'job_category_id': selectedJobCategoryId.value > 0
               ? selectedJobCategoryId.value
               : null,

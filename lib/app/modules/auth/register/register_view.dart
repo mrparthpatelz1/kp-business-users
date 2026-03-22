@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
 import '../../../core/utils/date_utils.dart';
@@ -473,11 +474,34 @@ class RegisterView extends GetView<RegisterController> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 12.0),
-                      child: Text(
-                        'I agree to the Terms of Service. I understand there is zero tolerance for objectionable content or abusive users.',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: AppTheme.textSecondary,
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'I agree to the ',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: AppTheme.textSecondary,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Terms of Service',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                color: AppTheme.primaryColor,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => controller.showEula(),
+                            ),
+                            TextSpan(
+                              text:
+                                  '. I understand there is zero tolerance for objectionable content or abusive users.',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
