@@ -215,7 +215,7 @@ class RegisterView extends GetView<RegisterController> {
             SizedBox(height: 1.h),
             Center(
               child: Text(
-                'Upload Profile Picture *',
+                'Upload Profile Picture (Optional)',
                 style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14.sp,
@@ -376,7 +376,7 @@ class RegisterView extends GetView<RegisterController> {
             SizedBox(height: 2.h),
 
             // Gender
-            Text('Gender *', style: Theme.of(context).textTheme.titleMedium),
+            Text('Gender (Optional)', style: Theme.of(context).textTheme.titleMedium),
             SizedBox(height: 1.h),
             Obx(
               () => Row(
@@ -388,7 +388,7 @@ class RegisterView extends GetView<RegisterController> {
                       label: Text(g.capitalizeFirst!),
                       selected: isSelected,
                       onSelected: (_) {
-                        controller.gender.value = g;
+                        controller.gender.value = isSelected ? '' : g;
                         controller.clearAllFocus();
                       },
                       selectedColor: AppTheme.primaryColor,
@@ -408,7 +408,7 @@ class RegisterView extends GetView<RegisterController> {
                 onTap: () => controller.selectDateOfBirth(context),
                 child: InputDecorator(
                   decoration: const InputDecoration(
-                    labelText: 'Date of Birth *',
+                    labelText: 'Date of Birth (Optional)',
                     prefixIcon: Icon(Icons.calendar_today_outlined),
                   ),
                   child: Text(
@@ -417,6 +417,7 @@ class RegisterView extends GetView<RegisterController> {
                             controller.dateOfBirth.value!.toIso8601String(),
                           )
                         : 'Select date',
+
                     style: TextStyle(
                       color: controller.dateOfBirth.value != null
                           ? AppTheme.textPrimary
@@ -642,11 +643,12 @@ class RegisterView extends GetView<RegisterController> {
                 compareFn: (a, b) => a['id'] == b['id'],
                 decoratorProps: const DropDownDecoratorProps(
                   decoration: InputDecoration(
-                    labelText: 'Native Village *',
+                    labelText: 'Native Village (Optional)',
                     prefixIcon: Icon(Icons.location_city_outlined),
                     hintText: 'Select your native village',
                   ),
                 ),
+
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
                   containerBuilder: (context, popupWidget) =>
@@ -662,7 +664,7 @@ class RegisterView extends GetView<RegisterController> {
                   controller.selectedVillageId.value = item?['id'];
                   controller.clearAllFocus();
                 },
-                validator: (v) => v == null ? 'Required' : null,
+                validator: (v) => null,
                 onBeforePopupOpening: (selectedItem) async {
                   FocusScope.of(context).unfocus();
                   return true;
@@ -692,13 +694,13 @@ class RegisterView extends GetView<RegisterController> {
               controller: controller.addressController,
               focusNode: controller.addressFocusNode,
               decoration: const InputDecoration(
-                labelText: 'Address Line *',
+                labelText: 'Address Line (Optional)',
                 prefixIcon: Icon(Icons.home_outlined),
                 hintText: 'House no, Street, Area',
               ),
               maxLines: 2,
-              validator: (v) => v!.isEmpty ? 'Required' : null,
             ),
+
             SizedBox(height: 2.h),
 
             // Country - Searchable
@@ -712,10 +714,11 @@ class RegisterView extends GetView<RegisterController> {
                 compareFn: (a, b) => a['code'] == b['code'],
                 decoratorProps: const DropDownDecoratorProps(
                   decoration: InputDecoration(
-                    labelText: 'Country *',
+                    labelText: 'Country (Optional)',
                     prefixIcon: Icon(Icons.flag_outlined),
                   ),
                 ),
+
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
                   containerBuilder: (context, popupWidget) =>
@@ -731,6 +734,7 @@ class RegisterView extends GetView<RegisterController> {
                   if (item != null) controller.loadStates(item['code']);
                   controller.clearAllFocus();
                 },
+                validator: (v) => null,
                 onBeforePopupOpening: (selectedItem) async {
                   FocusScope.of(context).unfocus();
                   return true;
@@ -750,10 +754,11 @@ class RegisterView extends GetView<RegisterController> {
                 compareFn: (a, b) => a['code'] == b['code'],
                 decoratorProps: const DropDownDecoratorProps(
                   decoration: InputDecoration(
-                    labelText: 'State *',
+                    labelText: 'State (Optional)',
                     prefixIcon: Icon(Icons.map_outlined),
                   ),
                 ),
+
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
                   containerBuilder: (context, popupWidget) =>
@@ -769,7 +774,6 @@ class RegisterView extends GetView<RegisterController> {
                   if (item != null) controller.loadCities(item['code']);
                   controller.clearAllFocus();
                 },
-                validator: (v) => v == null ? 'Required' : null,
                 onBeforePopupOpening: (selectedItem) async {
                   FocusScope.of(context).unfocus();
                   return true;
@@ -789,10 +793,11 @@ class RegisterView extends GetView<RegisterController> {
                 compareFn: (a, b) => a['name'] == b['name'],
                 decoratorProps: const DropDownDecoratorProps(
                   decoration: InputDecoration(
-                    labelText: 'City *',
+                    labelText: 'City (Optional)',
                     prefixIcon: Icon(Icons.location_city_outlined),
                   ),
                 ),
+
                 popupProps: PopupProps.menu(
                   showSearchBox: true,
                   containerBuilder: (context, popupWidget) =>
@@ -808,7 +813,7 @@ class RegisterView extends GetView<RegisterController> {
                   controller.selectedCityName.value = item?['name'] ?? '';
                   controller.clearAllFocus();
                 },
-                validator: (v) => v == null ? 'Required' : null,
+                validator: (v) => null,
                 onBeforePopupOpening: (selectedItem) async {
                   FocusScope.of(context).unfocus();
                   return true;
@@ -823,16 +828,16 @@ class RegisterView extends GetView<RegisterController> {
               focusNode: controller.zipcodeFocusNode,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Zipcode *',
+                labelText: 'Zipcode (Optional)',
                 prefixIcon: Icon(Icons.pin_drop_outlined),
               ),
               validator: (v) {
-                if (v!.isEmpty) return 'Required';
-                if (!RegExp(r'^[0-9]{6}$').hasMatch(v))
+                if (v != null && v.isNotEmpty && !RegExp(r'^[0-9]{6}$').hasMatch(v))
                   return 'Enter 6 digit zipcode';
                 return null;
               },
             ),
+
             SizedBox(height: 4.h),
           ],
         ),

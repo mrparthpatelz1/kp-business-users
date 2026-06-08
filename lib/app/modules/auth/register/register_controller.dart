@@ -411,26 +411,17 @@ class RegisterController extends GetxController {
     switch (currentStep.value) {
       case 0:
         // Step 1 Validation
-        if (profileImage.value == null) {
-          _showError('Please select a profile picture');
-          return;
-        }
+        // Profile picture is now optional
+
 
         isValid = step1FormKey.currentState?.validate() ?? false;
         if (!isValid) return;
 
-        if (gender.value.isEmpty) {
-          _showError('Please select your gender');
-          return;
-        }
-        if (dateOfBirth.value == null) {
-          _showError('Please select your date of birth');
-          return;
-        }
         if (!acceptedEula.value) {
           _showError('Please accept the Terms of Service to continue');
           return;
         }
+
 
         // Check email and phone availability on Next button click
         isLoading.value = true;
@@ -449,19 +440,8 @@ class RegisterController extends GetxController {
         break;
       case 1:
         isValid = step2FormKey.currentState?.validate() ?? false;
-        if (isValid && selectedVillageId.value == null) {
-          _showError('Please select your native village');
-          return;
-        }
-        if (isValid && selectedStateCode.value.isEmpty) {
-          _showError('Please select your state');
-          return;
-        }
-        if (isValid && selectedCityName.value.isEmpty) {
-          _showError('Please select your city');
-          return;
-        }
         break;
+
       case 2: // User Type Step
         isValid = userType.value.isNotEmpty;
         if (!isValid) {
@@ -724,15 +704,16 @@ class RegisterController extends GetxController {
         'phone': '${phoneCountryCode.value}${phoneController.text.trim()}',
         'phone_country_code': phoneCountryCode.value,
         'password': passwordController.text,
-        'gender': gender.value,
+        'gender': gender.value.isNotEmpty ? gender.value : null,
         'date_of_birth': dateOfBirth.value?.toIso8601String().split('T')[0],
         'blood_group': bloodGroup.value.isNotEmpty ? bloodGroup.value : null,
         'native_village_id': selectedVillageId.value,
-        'living_address': addressController.text.trim(),
-        'living_city': selectedCityName.value,
-        'living_state': stateName,
-        'living_country': countryName,
-        'living_zipcode': zipcodeController.text.trim(),
+        'living_address': addressController.text.trim().isNotEmpty ? addressController.text.trim() : null,
+        'living_city': selectedCityName.value.isNotEmpty ? selectedCityName.value : null,
+        'living_state': stateName.isNotEmpty ? stateName : null,
+        'living_country': countryName.isNotEmpty ? countryName : null,
+        'living_zipcode': zipcodeController.text.trim().isNotEmpty ? zipcodeController.text.trim() : null,
+
         'user_type': userType.value,
         // Include FCM token for push notifications
         if (Get.isRegistered<NotificationService>())

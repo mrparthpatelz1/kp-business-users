@@ -629,19 +629,20 @@ class EditProfileController extends GetxController {
         'date_of_birth': dateOfBirth.value != null
             ? DateFormat('yyyy-MM-dd').format(dateOfBirth.value!)
             : null,
-        'gender': gender.value,
+        'gender': gender.value.isNotEmpty ? gender.value : null,
         'blood_group': bloodGroup.value.isEmpty ? null : bloodGroup.value,
 
         // Address
-        'living_address': addressController.text.trim(),
-        'living_city': selectedCityName.value,
+        'living_address': addressController.text.trim().isNotEmpty ? addressController.text.trim() : null,
+        'living_city': selectedCityName.value.isNotEmpty ? selectedCityName.value : null,
         'living_state': states.firstWhereOrNull(
           (s) => s['code'] == selectedStateCode.value,
         )?['name'],
         'living_country': countries.firstWhereOrNull(
           (c) => c['code'] == selectedCountryCode.value,
         )?['name'],
-        'living_zipcode': zipcodeController.text.trim(),
+        'living_zipcode': zipcodeController.text.trim().isNotEmpty ? zipcodeController.text.trim() : null,
+
         'user_type': userType.value,
 
         // Education

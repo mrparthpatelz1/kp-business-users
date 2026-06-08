@@ -1,10 +1,10 @@
 class ApiConstants {
   // static const String baseUrl = 'http://localhost:3000/api/v2'; // For Chrome
   static const String baseUrl =
-  'https://api.48kadavapatidarparivar.cloud/api/v2'; // Production URL
+      'https://api.48kadavapatidarparivar.cloud/api/v2'; // Production URL
   // static const String baseUrl = 'http://10.0.2.2:3000/api/v2'; // Local URL for emulator
   // static const String baseUrl =
-  //     'http://192.168.1.51:3000/api/v2'; // Local URL for real device
+  //     'http://127.0.0.1:3000/api/v2'; // Local URL for real device
   // static const String baseUrl =
   //     'https://staging.48kadavapatidarparivar.cloud/api/v2'; // Staging URL
 

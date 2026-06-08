@@ -201,9 +201,10 @@ class EditProfileView extends GetView<EditProfileController> {
 
                   // Gender
                   Text(
-                    'Gender *',
+                    'Gender (Optional)',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+
                   SizedBox(height: 1.h),
                   Obx(
                     () => Row(
@@ -214,7 +215,8 @@ class EditProfileView extends GetView<EditProfileController> {
                           child: ChoiceChip(
                             label: Text(g.capitalizeFirst!),
                             selected: isSelected,
-                            onSelected: (_) => controller.gender.value = g,
+                            onSelected: (_) => controller.gender.value = isSelected ? '' : g,
+
                             selectedColor: AppTheme.primaryColor,
                             labelStyle: TextStyle(
                               color: isSelected
@@ -274,9 +276,10 @@ class EditProfileView extends GetView<EditProfileController> {
                       onTap: () => controller.selectDateOfBirth(context),
                       child: InputDecorator(
                         decoration: const InputDecoration(
-                          labelText: 'Date of Birth *',
+                          labelText: 'Date of Birth (Optional)',
                           prefixIcon: Icon(Icons.calendar_today_outlined),
                         ),
+
                         child: Text(
                           controller.dateOfBirth.value != null
                               ? AppDateUtils.formatDateSlash(
@@ -333,10 +336,11 @@ class EditProfileView extends GetView<EditProfileController> {
                     controller: controller.nativeVillageNameController,
                     enabled: false,
                     decoration: const InputDecoration(
-                      labelText: 'Native Village *',
+                      labelText: 'Native Village (Optional)',
                       prefixIcon: Icon(Icons.location_city_outlined),
                       suffixIcon: Icon(Icons.lock, size: 16),
                     ),
+
                   ),
                   SizedBox(height: 3.h),
 
@@ -360,13 +364,13 @@ class EditProfileView extends GetView<EditProfileController> {
                   TextFormField(
                     controller: controller.addressController,
                     decoration: const InputDecoration(
-                      labelText: 'Address Line *',
+                      labelText: 'Address Line (Optional)',
                       prefixIcon: Icon(Icons.home_outlined),
                       hintText: 'House no, Street, Area',
                     ),
                     maxLines: 2,
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
                   ),
+
                   SizedBox(height: 2.h),
 
                   // Country - Searchable
@@ -381,10 +385,11 @@ class EditProfileView extends GetView<EditProfileController> {
                       compareFn: (a, b) => a['code'] == b['code'],
                       decoratorProps: const DropDownDecoratorProps(
                         decoration: InputDecoration(
-                          labelText: 'Country *',
+                          labelText: 'Country (Optional)',
                           prefixIcon: Icon(Icons.flag_outlined),
                         ),
                       ),
+
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
                         containerBuilder: (context, popupWidget) =>
@@ -418,10 +423,11 @@ class EditProfileView extends GetView<EditProfileController> {
                       compareFn: (a, b) => a['code'] == b['code'],
                       decoratorProps: const DropDownDecoratorProps(
                         decoration: InputDecoration(
-                          labelText: 'State *',
+                          labelText: 'State (Optional)',
                           prefixIcon: Icon(Icons.map_outlined),
                         ),
                       ),
+
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
                         containerBuilder: (context, popupWidget) =>
@@ -436,7 +442,7 @@ class EditProfileView extends GetView<EditProfileController> {
                       onChanged: (item) {
                         if (item != null) controller.loadCities(item['code']);
                       },
-                      validator: (v) => v == null ? 'Required' : null,
+                      validator: (v) => null,
                       onBeforePopupOpening: (selectedItem) async {
                         FocusScope.of(context).unfocus();
                         return true;
@@ -456,10 +462,11 @@ class EditProfileView extends GetView<EditProfileController> {
                       compareFn: (a, b) => a['name'] == b['name'],
                       decoratorProps: const DropDownDecoratorProps(
                         decoration: InputDecoration(
-                          labelText: 'City *',
+                          labelText: 'City (Optional)',
                           prefixIcon: Icon(Icons.location_city_outlined),
                         ),
                       ),
+
                       popupProps: PopupProps.menu(
                         showSearchBox: true,
                         containerBuilder: (context, popupWidget) =>
@@ -474,7 +481,7 @@ class EditProfileView extends GetView<EditProfileController> {
                       onChanged: (item) {
                         controller.selectedCityName.value = item?['name'] ?? '';
                       },
-                      validator: (v) => v == null ? 'Required' : null,
+                      validator: (v) => null,
                       onBeforePopupOpening: (selectedItem) async {
                         FocusScope.of(context).unfocus();
                         return true;
@@ -488,16 +495,16 @@ class EditProfileView extends GetView<EditProfileController> {
                     controller: controller.zipcodeController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Zipcode *',
+                      labelText: 'Zipcode (Optional)',
                       prefixIcon: Icon(Icons.pin_drop_outlined),
                     ),
                     validator: (v) {
-                      if (v!.isEmpty) return 'Required';
-                      if (!RegExp(r'^[0-9]{6}$').hasMatch(v)) {
+                      if (v != null && v.isNotEmpty && !RegExp(r'^[0-9]{6}$').hasMatch(v)) {
                         return 'Enter 6 digit zipcode';
                       }
                       return null;
                     },
+
                   ),
                   SizedBox(height: 3.h),
 
@@ -1038,16 +1045,17 @@ class EditProfileView extends GetView<EditProfileController> {
                             radius: 40,
                             backgroundImage: FileImage(form.logo.value!),
                           );
-                        } else if (form.currentLogoUrl?.value != null &&
-                            form.currentLogoUrl!.value!.isNotEmpty) {
+                        } else if (form.currentLogoUrl.value != null &&
+                            form.currentLogoUrl.value!.isNotEmpty) {
                           return CircleAvatar(
                             radius: 40,
                             backgroundImage: NetworkImage(
                               ApiConstants.getFullUrl(
-                                form.currentLogoUrl!.value,
+                                form.currentLogoUrl.value!,
                               ),
                             ),
                           );
+
                         } else {
                           return Container(
                             width: 80,
