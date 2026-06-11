@@ -2,7 +2,7 @@ name: kp_business_users
 description: "KP Business Community Platform - Users App"
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.1+6
 
 environment:
   sdk: ^3.10.7
