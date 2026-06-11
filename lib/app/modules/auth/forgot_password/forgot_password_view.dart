@@ -174,7 +174,7 @@ class ForgotPasswordView extends GetView<ForgotPasswordController> {
             ),
             SizedBox(height: 1.5.h),
             Text(
-              'Please enter the 6-digit OTP code sent to your registered account details.',
+              'Please enter the 6-digit OTP code sent to your registered account details. please check spam folder in your mail id if you not recived',
               style: GoogleFonts.sora(
                 fontSize: 14.sp,
                 color: AppTheme.textSecondary,
