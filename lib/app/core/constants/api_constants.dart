@@ -1,12 +1,12 @@
 class ApiConstants {
   // static const String baseUrl = 'http://localhost:3000/api/v2'; // For Chrome
-  static const String baseUrl =
-      'https://api.48kadavapatidarparivar.cloud/api/v2'; // Production URL
+  // static const String baseUrl =
+  //     'https://api.48kadavapatidarparivar.cloud/api/v2'; // Production URL
   // static const String baseUrl = 'http://10.0.2.2:3000/api/v2'; // Local URL for emulator
+  static const String baseUrl =
+      'http://192.168.1.8:3000/api/v2'; // Local URL for real device (Mac IP)
   // static const String baseUrl =
-  //     'http://127.0.0.1:3000/api/v2'; // Local URL for real device
-  // static const String baseUrl =
-  //     'https://staging.48kadavapatidarparivar.cloud/api/v2'; // Staging URL
+  //     'http://127.0.0.1:3000/api/v2'; // Local URL for iOS Simulator
 
   static String get assetBaseUrl => baseUrl.replaceAll('/api/v2', '');
 
@@ -28,6 +28,9 @@ class ApiConstants {
   static const String checkPhone = '/auth/check-phone';
   static const String changePassword = '/auth/change-password';
   static const String profile = '/auth/profile';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String verifyOtp = '/auth/verify-otp';
+  static const String resetPassword = '/auth/reset-password';
 
   // Master data endpoints
   static const String villages = '/master/villages';

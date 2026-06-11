@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/date_utils.dart';
 import 'user_avatar.dart';
@@ -192,11 +193,12 @@ class UserProfileContent extends StatelessWidget {
             arguments: {...user, 'isOwnProfile': isOwnProfile},
           );
         },
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.all(5.w),
-              child: Row(
+        child: Padding(
+          padding: EdgeInsets.all(4.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Avatar
@@ -254,129 +256,17 @@ class UserProfileContent extends StatelessWidget {
                         Divider(height: 1.5.h),
                         // Role/Work Info
                         if (workContent != null) workContent,
-
-                        // Add some space at bottom for the button
-                        if (workContent != null) SizedBox(height: 3.h),
                       ],
                     ),
                   ),
                 ],
               ),
-            ),
-            Positioned(
-              bottom: 2.w,
-              right: 2.w,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!isOwnProfile && Get.isRegistered<OtherUserProfileController>())
-                    Obx(() {
-                      final otherController = Get.find<OtherUserProfileController>();
-                      final isBlocked = otherController.isBlocked.value;
-                      return TextButton.icon(
-                        onPressed: () => otherController.toggleBlockStatus(),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 2.w,
-                            vertical: 0,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          backgroundColor: isBlocked ? AppTheme.errorColor.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        icon: Icon(
-                          isBlocked ? Icons.block : Icons.block_flipped,
-                          size: 14.sp,
-                          color: isBlocked ? AppTheme.errorColor : Colors.grey[700],
-                        ),
-                        label: Text(
-                          isBlocked ? 'Unblock' : 'Block',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: isBlocked ? AppTheme.errorColor : Colors.grey[700],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      );
-                    }),
-                  if (!isOwnProfile && Get.isRegistered<OtherUserProfileController>())
-                    SizedBox(width: 2.w),
-                  if (!isOwnProfile && user['numeric_id'] != null)
-                    TextButton.icon(
-                      onPressed: () {
-                        final chatController = Get.put(ChatController());
-                        chatController.startConversation(user['numeric_id']);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 2.w,
-                          vertical: 0,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: Icon(
-                        Icons.message_rounded,
-                        size: 14.sp,
-                        color: AppTheme.primaryColor,
-                      ),
-                      label: Text(
-                        'Message',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  if (!isOwnProfile && user['numeric_id'] != null)
-                    SizedBox(width: 2.w),
-                  TextButton(
-                    onPressed: () {
-                      Get.toNamed(
-                        Routes.FULL_PROFILE,
-                        arguments: {...user, 'isOwnProfile': isOwnProfile},
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 2.w,
-                        vertical: 0,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'View Profile',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(width: 1.w),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 10.sp,
-                          color: AppTheme.primaryColor,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+              SizedBox(height: 1.5.h),
+              const Divider(height: 1),
+              SizedBox(height: 1.h),
+              _buildActionRow(context),
+            ],
+          ),
         ),
       ),
     );
@@ -508,6 +398,161 @@ class UserProfileContent extends StatelessWidget {
   String _formatPostType(String? type) {
     if (type == null) return '';
     return type.split('_').map((word) => word.capitalizeFirst).join(' ');
+  }
+
+  Widget _buildActionRow(BuildContext context) {
+    final phone = user['phone']?.toString();
+    final email = user['email']?.toString();
+
+    return Row(
+      children: [
+        if (!isOwnProfile) ...[
+          if (phone != null && phone.trim().isNotEmpty) ...[
+            _buildIconButton(
+              icon: Icons.phone_in_talk_rounded,
+              color: AppTheme.successColor,
+              onPressed: () => _makePhoneCall(phone),
+              tooltip: 'Call Phone',
+            ),
+            SizedBox(width: 2.w),
+          ],
+          if (email != null && email.trim().isNotEmpty) ...[
+            _buildIconButton(
+              icon: Icons.mail_rounded,
+              color: AppTheme.accentColor,
+              onPressed: () => _sendEmail(email),
+              tooltip: 'Send Email',
+            ),
+            SizedBox(width: 2.w),
+          ],
+          if (user['numeric_id'] != null) ...[
+            _buildIconButton(
+              icon: Icons.message_rounded,
+              color: AppTheme.primaryColor,
+              onPressed: () {
+                final chatController = Get.put(ChatController());
+                chatController.startConversation(user['numeric_id']);
+              },
+              tooltip: 'Send Message',
+            ),
+            SizedBox(width: 2.w),
+          ],
+          if (Get.isRegistered<OtherUserProfileController>()) ...[
+            Obx(() {
+              final otherController = Get.find<OtherUserProfileController>();
+              final isBlocked = otherController.isBlocked.value;
+              return _buildIconButton(
+                icon: isBlocked ? Icons.block : Icons.block_flipped,
+                color: isBlocked ? AppTheme.errorColor : Colors.grey[600]!,
+                onPressed: () => otherController.toggleBlockStatus(),
+                tooltip: isBlocked ? 'Unblock' : 'Block',
+              );
+            }),
+            SizedBox(width: 2.w),
+          ],
+        ],
+        const Spacer(),
+        TextButton(
+          onPressed: () {
+            Get.toNamed(
+              Routes.FULL_PROFILE,
+              arguments: {...user, 'isOwnProfile': isOwnProfile},
+            );
+          },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 2.w),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Full Details',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(width: 1.w),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 11.sp,
+                color: AppTheme.primaryColor,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIconButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: Material(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 8.5.w,
+            height: 8.5.w,
+            alignment: Alignment.center,
+            child: Icon(
+              icon,
+              size: 15.sp,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _makePhoneCall(String phone) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phone);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not place call to $phone',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error placing phone call: $e');
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(scheme: 'mailto', path: email);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not open email client for $email',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending email: $e');
+    }
   }
 
   // --- Reused Section Builders ---

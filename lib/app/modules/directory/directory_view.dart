@@ -28,6 +28,7 @@ class DirectoryView extends GetView<DirectoryController> {
           Padding(
             padding: EdgeInsets.all(4.w),
             child: TextField(
+              controller: controller.searchController,
               decoration: InputDecoration(
                 hintText: 'Search by name, village, business...',
                 prefixIcon: const Icon(Icons.search),
@@ -36,8 +37,8 @@ class DirectoryView extends GetView<DirectoryController> {
                       ? IconButton(
                           icon: const Icon(Icons.clear),
                           onPressed: () {
+                            controller.searchController.clear();
                             controller.searchQuery.value = '';
-                            controller.loadUsers(refresh: true);
                           },
                         )
                       : const SizedBox.shrink(),
@@ -50,12 +51,82 @@ class DirectoryView extends GetView<DirectoryController> {
               ),
               onSubmitted: (value) => controller.search(value),
               onChanged: (value) {
-                if (value.isEmpty) {
-                  controller.search('');
+                // Auto-search when query is empty or >= 3 characters
+                if (value.length >= 3 || value.isEmpty) {
+                  controller.searchQuery.value = value;
                 }
               },
             ),
           ),
+
+          // Total Members Card
+          Obx(() => Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4.w),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(4.w),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryColor.withOpacity(0.85),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.people_alt_rounded,
+                          color: Colors.white,
+                          size: 22.sp,
+                        ),
+                      ),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Directory Members',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: 0.5.h),
+                            Text(
+                              '${controller.totalUsers.value}',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+          SizedBox(height: 1.h),
 
           // Filter Chips
           Obx(() => _buildFilterChips()),
@@ -191,109 +262,134 @@ class DirectoryView extends GetView<DirectoryController> {
     final userType = user['user_type']?.toString() ?? 'user';
     final isBusinessUser = userType == 'business';
 
-    return Card(
-      margin: EdgeInsets.only(bottom: 2.h),
-      child: InkWell(
-        onTap: () => Get.to(() => UserDetailView(userId: user['id'])),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(4.w),
-          child: Row(
-            children: [
-              // Profile Photo
-              UserAvatar(
-                radius: 28,
-                imageUrl: user['profile_picture'],
-                name: user['full_name'] ?? user['surname'],
-                isBusiness: isBusinessUser,
-                enablePopup: true,
-              ),
-              SizedBox(width: 4.w),
-
-              // User Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${user['full_name'] ?? ''} ${user['surname'] ?? ''}',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isBusinessUser
-                                ? AppTheme.primaryColor.withOpacity(0.1)
-                                : AppTheme.accentColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            userType.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: isBusinessUser
-                                  ? AppTheme.primaryColor
-                                  : AppTheme.accentColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+    return Container(
+      margin: EdgeInsets.only(bottom: 1.5.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.borderColor.withOpacity(0.8),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => Get.to(() => UserDetailView(userId: user['id'])),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 3.w),
+            child: Row(
+              children: [
+                // Profile Avatar with border
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isBusinessUser
+                          ? AppTheme.primaryColor.withOpacity(0.2)
+                          : AppTheme.accentColor.withOpacity(0.2),
+                      width: 2,
                     ),
-                    SizedBox(height: 0.5.h),
-                    if (user['native_village'] != null)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 14.sp,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(width: 1.w),
-                          Expanded(
-                            child: Text(
-                              user['native_village'],
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    if (user['current_address'] != null) ...[
-                      SizedBox(height: 0.3.h),
-                      Row(
-                        children: [
-                          Icon(Icons.home, size: 14.sp, color: Colors.grey),
-                          SizedBox(width: 1.w),
-                          Expanded(
-                            child: Text(
-                              user['current_address'],
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
+                  ),
+                  child: UserAvatar(
+                    radius: 26,
+                    imageUrl: user['profile_picture'],
+                    name: user['full_name'] ?? user['surname'],
+                    isBusiness: isBusinessUser,
+                    enablePopup: true,
+                  ),
                 ),
-              ),
+                SizedBox(width: 3.5.w),
 
-              // Arrow
-              Icon(Icons.chevron_right, color: Colors.grey[400]),
-            ],
+                // User details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${user['full_name'] ?? ''} ${user['surname'] ?? ''}',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 14.5.sp,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isBusinessUser
+                                  ? AppTheme.primaryColor.withOpacity(0.08)
+                                  : AppTheme.accentColor.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              userType == 'job' ? 'JOB SEEKER' : userType.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                color: isBusinessUser
+                                    ? AppTheme.primaryColor
+                                    : AppTheme.accentColor,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 0.8.h),
+                      if (user['native_village'] != null && user['native_village'].toString().isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_rounded,
+                              size: 13.sp,
+                              color: AppTheme.primaryColor.withOpacity(0.6),
+                            ),
+                            SizedBox(width: 1.w),
+                            Expanded(
+                              child: Text(
+                                user['native_village'],
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12.sp,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 2.w),
+
+                // Details chevron
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey[400],
+                  size: 18.sp,
+                ),
+              ],
+            ),
           ),
         ),
       ),

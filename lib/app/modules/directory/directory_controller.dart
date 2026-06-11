@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/api_constants.dart';
 import '../../data/providers/api_provider.dart';
 import '../../data/services/master_service.dart';
@@ -14,6 +15,7 @@ class DirectoryController extends GetxController {
   final RxList<Map<String, dynamic>> users = <Map<String, dynamic>>[].obs;
   final RxInt currentPage = 1.obs;
   final RxInt totalPages = 1.obs;
+  final RxInt totalUsers = 0.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedVillage = ''.obs;
   final RxString selectedUserType = ''.obs;
@@ -22,6 +24,7 @@ class DirectoryController extends GetxController {
   final RxString selectedJobCategory = ''.obs;
   final RxString selectedJobSubcategory = ''.obs;
   final ScrollController scrollController = ScrollController();
+  final TextEditingController searchController = TextEditingController();
 
   // Master data for filters
   final RxList<Map<String, dynamic>> businessCategories =
@@ -39,11 +42,17 @@ class DirectoryController extends GetxController {
     scrollController.addListener(_onScroll);
     loadMasterData();
     loadUsers();
+
+    // Auto-search debounce worker (trigger search 500ms after user stops typing)
+    debounce(searchQuery, (callback) {
+      loadUsers(refresh: true);
+    }, time: const Duration(milliseconds: 500));
   }
 
   @override
   void onClose() {
     scrollController.dispose();
+    searchController.dispose();
     super.onClose();
   }
 
@@ -128,6 +137,7 @@ class DirectoryController extends GetxController {
         }
 
         totalPages.value = data['pagination']['total_pages'] ?? 1;
+        totalUsers.value = data['pagination']['total'] ?? 0;
       }
     } catch (e) {
       debugPrint('Error loading users: $e');
@@ -203,5 +213,43 @@ class DirectoryController extends GetxController {
       debugPrint('Error loading user profile: $e');
     }
     return null;
+  }
+
+  Future<void> makePhoneCall(String phone) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phone);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not place call to $phone',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error placing phone call: $e');
+    }
+  }
+
+  Future<void> sendEmail(String email) async {
+    final Uri launchUri = Uri(scheme: 'mailto', path: email);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not open email client for $email',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending email: $e');
+    }
   }
 }

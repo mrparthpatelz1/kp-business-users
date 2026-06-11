@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:responsive_sizer/responsive_sizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/utils/date_utils.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
@@ -71,8 +72,20 @@ class FullProfileView extends StatelessWidget {
     return Column(
       children: [
         _buildSection('Personal Information', Icons.person, [
-          _buildInfoRow('Email', user['email'] ?? 'N/A'),
-          _buildInfoRow('Phone', user['phone'] ?? 'N/A'),
+          _buildInfoRow(
+            'Email',
+            user['email'] ?? 'N/A',
+            onTap: (user['email'] != null && user['email'].toString().trim().isNotEmpty && user['email'].toString() != 'N/A')
+                ? () => _sendEmail(user['email'].toString())
+                : null,
+          ),
+          _buildInfoRow(
+            'Phone',
+            user['phone'] ?? 'N/A',
+            onTap: (user['phone'] != null && user['phone'].toString().trim().isNotEmpty && user['phone'].toString() != 'N/A')
+                ? () => _makePhoneCall(user['phone'].toString())
+                : null,
+          ),
           _buildInfoRow(
             'Gender',
             (user['gender'] ?? 'N/A').toString().toUpperCase(),
@@ -131,26 +144,49 @@ class FullProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 0.8.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 35.w,
-            child: Text(
-              label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+  Widget _buildInfoRow(String label, String value, {VoidCallback? onTap}) {
+    final bool isInteractive = onTap != null && value != 'N/A' && value.trim().isNotEmpty;
+    return InkWell(
+      onTap: isInteractive ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: 0.8.h,
+          horizontal: isInteractive ? 2.w : 0,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 35.w,
+              child: Text(
+                label,
+                style: TextStyle(color: Colors.grey[600], fontSize: 13.sp),
+              ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w500,
+                  color: isInteractive ? AppTheme.primaryColor : null,
+                  decoration: isInteractive ? TextDecoration.underline : null,
+                ),
+              ),
             ),
-          ),
-        ],
+            if (isInteractive) ...[
+              SizedBox(width: 2.w),
+              Icon(
+                label.toLowerCase().contains('phone')
+                    ? Icons.phone_callback_rounded
+                    : Icons.mail_outline_rounded,
+                size: 14.sp,
+                color: AppTheme.primaryColor,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -408,5 +444,43 @@ class FullProfileView extends StatelessWidget {
   String _formatDate(String? dateStr) {
     if (dateStr == null) return 'N/A';
     return AppDateUtils.formatDate(dateStr);
+  }
+
+  Future<void> _makePhoneCall(String phone) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phone);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not place call to $phone',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error placing phone call: $e');
+    }
+  }
+
+  Future<void> _sendEmail(String email) async {
+    final Uri launchUri = Uri(scheme: 'mailto', path: email);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not open email client for $email',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending email: $e');
+    }
   }
 }

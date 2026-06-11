@@ -19,6 +19,7 @@ import '../modules/chat/chat_list_view.dart';
 import '../modules/chat/chat_detail_view.dart';
 import '../modules/main/post_detail_view.dart';
 import '../modules/auth/forgot_password/forgot_password_view.dart';
+import '../modules/auth/forgot_password/forgot_password_binding.dart';
 import '../modules/announcements/announcements_view.dart';
 import '../modules/announcements/announcements_binding.dart';
 import '../modules/profile/blocked_users_view.dart';
@@ -77,6 +78,7 @@ class AppPages {
     GetPage(
       name: Routes.FORGOT_PASSWORD,
       page: () => const ForgotPasswordView(),
+      binding: ForgotPasswordBinding(),
     ),
     GetPage(
       name: Routes.ANNOUNCEMENTS,

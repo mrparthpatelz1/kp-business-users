@@ -92,6 +92,97 @@ class PendingApprovalView extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
 
+              // Super Admin Section
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(4.w),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade300),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.admin_panel_settings_rounded,
+                          color: AppTheme.primaryColor,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 2.w),
+                        Text(
+                          'Contact Super Admin',
+                          style: GoogleFonts.sora(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 3.h),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                          radius: 24,
+                          child: const Icon(
+                            Icons.stars_rounded,
+                            color: AppTheme.primaryColor,
+                            size: 24,
+                          ),
+                        ),
+                        SizedBox(width: 3.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Yogesh Patel',
+                                style: GoogleFonts.sora(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 0.5.h),
+                              Text(
+                                '7874634971',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _makePhoneCall('7874634971'),
+                          icon: const Icon(
+                            Icons.phone,
+                            color: AppTheme.successColor,
+                            size: 24,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppTheme.successColor.withOpacity(0.1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 4.h),
+
               // Village Admins Section
               Obx(() {
                 if (controller.isLoading.value) {

@@ -38,7 +38,7 @@ android {
         create("release") {
             keyAlias = "upload"
             keyPassword = "Parth@131802"
-            storeFile = file("D:/48-KP-Business/keys/user/upload-keystore.jks")
+            storeFile = file("/Users/pathu/Documents/Work/48-KP-Business/kp-business-users/keys/user/upload-keystore.jks")
             storePassword = "Parth@131802"
         }
     }
